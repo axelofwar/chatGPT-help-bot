@@ -1,0 +1,10 @@
+davinci: "text-davinci-003"
+curie: "text-curie-001"
+babbage: "text-babbage-001"
+ada: "text-ada-001"
+
+#discord_channel_id: "1002167946828853268" #y00ts
+discord_channel_id: "718680065759641630" #TNTHQ
+prompt: "Answer the given question below using the data in the yml file provided: "
+
+OPENAI_ENDPOINT: "https://api.openai.com/v1"
