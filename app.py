@@ -37,37 +37,56 @@ async def chatGPTcall(mPrompt, mModel, mTemp, mTokens):
 
 
 async def main():
-    print("TRY TO OPEN UI.MAIN() IN APP.PY")
-    print("CHANNEL PRE UI: ", config["discord_channel_id"])
+    print("TRY UI.MAIN() IN APP.PY")
     try:
         channel_id, history_days = await asyncio.create_task(ui.main())
-        print("TRY CHANNEL_ID: ", channel_id)
+        print("UI CHANNEL_ID: ", channel_id)
     except:
         channel_id = config["discord_channel_id"]
+        print("EXCEPT CHANNEL_ID: ", channel_id)
         history_days = 30
-
-    print("ENTERING MAIN + CONFIG READ")
 
     prompt = config["prompt"]
     model = config["davinci"]
 
-    print("CHANNEL_ID PRE: ", channel_id)
     print("DISCORD BOT ENTERED")
 
     # Create a Discord client
     discord_token = os.getenv("DISCORD_TOKEN")  # if using python .env file
+    intents = discord.Intents.default()
+    intents.message_content = True
+    client = discord.Client(intents=intents)
 
-    client = discord.Client(
-        intents=discord.Intents.default())
+    if client.is_closed():
+        print("Client is closed")
+    else:
+        print("Client is open")
 
-    # print("DISCORD_TOKEN: ", discord_token) # to confirm operational
+    @client.event
+    async def on_ready():
+        print("The bot is ready!")
+
+    @client.event
+    async def on_disconnect():
+        print("The bot is disconnected!")
 
     try:
-        await client.start(discord_token)
-    except Exception as exc:
-        print(exc)
-        raise discord.errors.LoginFailure(
-            'Improper token has been passed.') from exc
+        # print("DISCORD TOKEN: ", discord_token)
+        await asyncio.wait_for(client.start(discord_token), timeout=10)
+        print("Client User: ", client.user)
+        print("CLIENT STARTED SUCCESSFULLY", client.status)
+    except asyncio.TimeoutError:
+        print("CLIENT TIMEOUT ERROR")
+    except discord.errors.LoginFailure as exc:
+        print(f'Error: {exc}')
+    except discord.errors.ClientException as exc1:
+        print(f'Error: {exc1}')
+    except discord.errors.HTTPException as exc2:
+        print(f'Error: {exc2}')
+    except discord.errors.DiscordException as exc4:
+        print(f'Error: {exc4}')
+
+    # print("DISCORD_TOKEN: ", discord_token) # to confirm operational
 
     print("DISCORD BOT STARTED")
     if channel_id == None:
@@ -81,7 +100,10 @@ async def main():
     else:
         print("CHANNEL VALUE RECIEVED: ", channel_id)
         # use channel_id passed into UI
-        channel = client.get_channel(int(channel_id))
+        try:
+            channel = client.get_channel(int(channel_id))
+        except:
+            print("CHANNEL GET FAILED")
 
     print("History: ", history_days)
     print("CHANNEL_ID POST: ", channel_id)
