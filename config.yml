@@ -1,8 +1,8 @@
-DISCORD_CHANNEL_ID: '718680065759641630'
+DISCORD_CHANNEL_ID: '943008506397749258'
 OPENAI_ENDPOINT: https://api.openai.com/v1
 ada: text-ada-001
 babbage: text-babbage-001
 curie: text-curie-001
 davinci: text-davinci-003
-discord_channel_id: '718680065759641630'
+discord_channel_id: '943008506397749258'
 prompt: 'Answer the given question below using the data in the yml file provided: '

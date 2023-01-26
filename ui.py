@@ -4,8 +4,6 @@ import yaml
 
 class UI:
     file = open("config.yml", "r+")
-    # config = yaml.safe_load(file)
-    # config = yaml.load(file)
     config = yaml.load(file, Loader=yaml.FullLoader)
 
     def __init__(self):
@@ -56,8 +54,13 @@ class UI:
             self.channel_id = self.channel_id.get()
 
         self.config["DISCORD_CHANNEL_ID"] = self.channel_id
-        with open("config.yml", "w") as file:
-            yaml.dump(self.config, file)
+
+        with open("config.yml", "r+") as file:
+            config = yaml.load(file, Loader=yaml.FullLoader)
+            config["DISCORD_CHANNEL_ID"] = self.channel_id
+            file.seek(0)  # move the cursor to the beginning of the file
+            yaml.dump(config, file)
+
         print("CONFIG UPDATED")
         self.close_window()
         print("WINDOW DESTROYED")
