@@ -5,8 +5,8 @@ import yaml
 class UI:
     file = open("config.yml", "r+")
     # config = yaml.safe_load(file)
-    config = yaml.load(file)
-    # config = yaml.load(file, Loader=yaml.FullLoader)
+    # config = yaml.load(file)
+    config = yaml.load(file, Loader=yaml.FullLoader)
 
     def __init__(self):
         self.history_days = 30
