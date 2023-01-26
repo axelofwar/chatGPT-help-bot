@@ -1,8 +1,12 @@
 import tkinter as tk
-import asyncio
+import yaml
 
 
 class UI:
+    file = open("config.yml", "r+")
+    # config = yaml.safe_load(file)
+    config = yaml.load(file)
+    # config = yaml.load(file, Loader=yaml.FullLoader)
 
     def __init__(self):
         self.history_days = 30
@@ -10,7 +14,6 @@ class UI:
 
     def make_window(self):
         self.window = tk.Tk()
-        print("WINDOW CREATED")
 
         # resize and center UI window
         screen_width = self.window.winfo_screenwidth()
@@ -23,7 +26,6 @@ class UI:
 
         self.window.geometry("%dx%d+%d+%d" % (width, height, x, y))
 
-        print("WINDOW POSITIONED")
         label = tk.Label(self.window, text="History (Days):")
         history_slider = tk.Scale(self.window,
                                   from_=0,
@@ -39,7 +41,6 @@ class UI:
         self.channel_id = tk.Entry(self.window)
         self.channel_id.pack()
 
-        print("SUBMIT BUTTON MADE")
         submit_button = tk.Button(
             self.window, text="Submit", command=self.submit)
         submit_button.pack()
@@ -49,9 +50,15 @@ class UI:
 
     def submit(self):
         if self.channel_id.get() == "":
-            self.channel_id = None
+            self.channel_id = self.config["discord_channel_id"]
+            # TODO: add error message instead of defaulting to config
         else:
             self.channel_id = self.channel_id.get()
+
+        self.config["DISCORD_CHANNEL_ID"] = self.channel_id
+        with open("config.yml", "w") as file:
+            yaml.dump(self.config, file)
+        print("CONFIG UPDATED")
         self.close_window()
         print("WINDOW DESTROYED")
 
