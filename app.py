@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 # openai.api_key = os.getenv("OPENAI_API_KEY")  # if using python .env file
-# openai.api_key = os.environ.get("OPENAI_API_KEY")  # if using python .env m2
 # if using replit Secrets function
 openai.api_key = os.environ['OPENAI_API_KEY']
 if not openai.api_key:
@@ -58,22 +57,32 @@ async def main():
     client = discord.Client(intents=intents)
 
     if client.is_closed():
-        print("Client is closed")
+        print('Closed client: ', client.status)
     else:
-        print("Client is open")
+        print('Opened client:', client.status)
 
     @client.event
     async def on_ready():
         print("The bot is ready!")
+        print(f'{client.user} has connected to Discord!')
+        print(f'{client.user} status: {client.status}')
+        print(f'{client.user} is connected to the following guild:')
+        print(f'{client.user} current activity: {client.activity}')
 
     @client.event
     async def on_disconnect():
-        print("The bot is disconnected!")
-
+        print(f'{client.user} has disconnected from Discord!')
     try:
-        # print("DISCORD TOKEN: ", discord_token)
-        await asyncio.wait_for(client.start(discord_token), timeout=10)
+        task = asyncio.create_task(client.start(discord_token))
+        await asyncio.wait_for(task, timeout=30)
+        # done, pending = await asyncio.wait([task, client.close()], return_when=asyncio.FIRST_COMPLETED)
+        # for t in pending:
+        #     t.cancel()
+
         print("Client User: ", client.user)
+        print(f'{client.user} status: {client.status}')
+        print(f'{client.user} is connected to the following guild:')
+        print(f'{client.user} current activity: {client.activity}')
         print("CLIENT STARTED SUCCESSFULLY", client.status)
     except asyncio.TimeoutError:
         print("CLIENT TIMEOUT ERROR")
@@ -102,16 +111,13 @@ async def main():
         # use channel_id passed into UI
         try:
             channel = client.get_channel(int(channel_id))
+            print("CHANNEL GET SUCCESS: ", channel)
         except:
             print("CHANNEL GET FAILED")
 
     print("History: ", history_days)
     print("CHANNEL_ID POST: ", channel_id)
     print("CHANNEL POST: ", channel)
-
-    messages = await channel.history(limit=history_days, oldest_first=True).flatten()
-
-    print("MESSAGES: ", messages)
 
     filename = 'output.txt'
 
@@ -120,8 +126,11 @@ async def main():
     else:
         outputFile = open(filename, 'x')
 
-    for message in messages:
+    async for message in channel.history(limit=history_days, oldest_first=True):
+        # process message here
+        print("MESSAGE: ", message.content)
         outputFile.write(message.content)
+        outputFile.write("\n")
 
     outputFile.close()
 
