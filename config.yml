@@ -5,4 +5,9 @@ babbage: text-babbage-001
 curie: text-curie-001
 davinci: text-davinci-003
 discord_channel_id: '943008506397749258'
-prompt: 'Answer the given question below using the data in the yml file provided: '
+discord_channel_id_1: '943003619949690941'
+discord_channel_id_2: '943011412219920415'
+max_tokens: 150
+prompt: 'What has Axelofwar been up to lately? '
+temp: 0.9
+timeout: 15

@@ -9,6 +9,7 @@ class UI:
     def __init__(self):
         self.history_days = 30
         self.channel_id = ""
+        self.cancelFlag = False
 
     def make_window(self):
         self.window = tk.Tk()
@@ -17,7 +18,7 @@ class UI:
         screen_width = self.window.winfo_screenwidth()
         screen_height = self.window.winfo_screenheight()
         width = 200
-        height = 150
+        height = 175
 
         x = (screen_width / 2) - (width / 2)
         y = (screen_height / 2) - (height / 2)
@@ -43,6 +44,10 @@ class UI:
             self.window, text="Submit", command=self.submit)
         submit_button.pack()
 
+        cancel_button = tk.Button(
+            self.window, text="Cancel", command=self.cancel)
+        cancel_button.pack()
+
     def update_history_days(self, value):
         self.history_days = float(value)
 
@@ -65,8 +70,14 @@ class UI:
         self.close_window()
         print("WINDOW DESTROYED")
 
+    def cancel(self):
+        self.close_window()
+        print("CANCELLED")
+        self.cancelFlag = True
+        return "CANCELLED"
+
     def get_result(self):
-        return self.channel_id, self.history_days
+        return self.channel_id, self.history_days, self.cancelFlag
 
     def close_window(self):
         self.window.destroy()
@@ -76,5 +87,5 @@ async def main():
     ui = UI()
     ui.make_window()
     ui.window.mainloop()
-    channel_id, history = ui.get_result()
-    return channel_id, history
+    channel_id, history, cancelFlag = ui.get_result()
+    return channel_id, history, cancelFlag
