@@ -4,6 +4,8 @@ import asyncio
 import ui
 import yaml
 import discord
+import re
+from collections import Counter
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -74,10 +76,7 @@ async def main():
         print(f'{client.user} has disconnected from Discord!')
     try:
         task = asyncio.create_task(client.start(discord_token))
-        await asyncio.wait_for(task, timeout=30)
-        # done, pending = await asyncio.wait([task, client.close()], return_when=asyncio.FIRST_COMPLETED)
-        # for t in pending:
-        #     t.cancel()
+        await asyncio.wait_for(task, timeout=15)
 
         print("Client User: ", client.user)
         print(f'{client.user} status: {client.status}')
@@ -115,6 +114,9 @@ async def main():
         except:
             print("CHANNEL GET FAILED")
 
+    task.cancel()  # cancel the task
+    # TODO: fix cancel so don't need to wait whole 15 seconds
+
     print("History: ", history_days)
     print("CHANNEL_ID POST: ", channel_id)
     print("CHANNEL POST: ", channel)
@@ -126,13 +128,49 @@ async def main():
     else:
         outputFile = open(filename, 'x')
 
+    stopwords = ["the", "and", "I", "to", "in", "a", "of", "is", "it",
+                 "you", "that", "he", "was", "for", "on", "are", "as",
+                 "with", "his", "they", "I'm", "at", "be", "this", "have",
+                 "from", "or", "one", "had", "by", "word", "but", "not", "what",
+                 "all", "were", "we", "when", "your", "can", "said", "there", "use",
+                 "an", "each", "which", "she", "do", "how", "their", "if", "will",
+                 "up", "other", "about", "out", "many", "then", "them", "these", "so",
+                 "some", "her", "would", "make", "like", "him", "into", "time", "has",
+                 "look", "two", "more", "write", "go", "see", "number", "no", "way",
+                 "could", "people", "my", "than", "first", "water", "been", "call",
+                 "who", "oil", "its", "now", "find", "long", "down", "day", "did",
+                 "get", "come", "made", "may", "part", "<#943011412219920415>"]
+    # question_words = ["what", "when", "where", "who",
+    #                   "why", "how", "can", "could", "would", "should"]
+    word_counts = Counter()
+    # question_counts = Counter()
     async for message in channel.history(limit=history_days, oldest_first=True):
         # process message here
         print("MESSAGE: ", message.content)
+        print("MESSAGE AUTHOR: ", message.author)
+        print("MESSAGE TIMESTAMP: ", message.created_at)
+        print("\n")
+        words = message.content.split()
+        words = [word for word in words if word not in stopwords]
+        word_counts.update(words)
+
+        # if re.match(f"^{question_words}", message.content, re.IGNORECASE):
+        #     question_counts.update([message.content])
+        # if re.search(r'\?$', message.content):
+        #     question_counts.update([message.content])
+
+        top_3_keywords = word_counts.most_common(3)
+        print("Top 3 keywords: ", top_3_keywords)
+        print("\n")
+
+        # top_3_questions = question_counts.most_common(3)
+        # print("Top 3 commonly asked questions: ", top_3_questions)
+        # print("\n")
         outputFile.write(message.content)
         outputFile.write("\n")
 
     outputFile.close()
+    return "SUCCESS"
 
 
 # asyncio.get_event_loop().run_until_complete(main())
