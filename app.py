@@ -2,8 +2,11 @@ import os
 import openai
 import asyncio
 import ui
+import sys
 import yaml
 import discord
+import tweepy
+import urllib.parse
 import re
 from collections import Counter
 from dotenv import load_dotenv
@@ -14,16 +17,15 @@ load_dotenv()
 openai.api_key = os.environ['OPENAI_API_KEY']
 if not openai.api_key:
     openai.api_key = ""
+    print("OPENAI API KEY NOT FOUND")
 
 with open("config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 
 openai.api_endpoint = config["OPENAI_ENDPOINT"]
 
-# function for ChatGPT call
 
-
-async def chatGPTcall(mPrompt, mModel, mTemp, mTokens):
+async def chatGPTcall(mPrompt, mModel, mTemp, mTokens):  # function for ChatGPT call
     response = openai.Completion.create(
         model=mModel,
         prompt=mPrompt,
@@ -37,29 +39,42 @@ async def chatGPTcall(mPrompt, mModel, mTemp, mTokens):
     return response
 
 
-async def main():
+async def initTwitter():  # function for initializing Twitter API
+    auth = tweepy.OAuthHandler(
+        os.getenv("TWITTER_API_KEY"), os.getenv("TWITTER_API_SECRET_KEY"))
+    api = tweepy.API(auth)
+    print("TWITTER API INITIALIZED")
+    return api
+
+
+async def get_channel_history():
     print("TRY UI.MAIN() IN APP.PY")
+    task = asyncio.create_task(ui.main())
     try:
-        channel_id, history_days = await asyncio.create_task(ui.main())
+        channel_id, history_days, cancel = await task
         print("UI CHANNEL_ID: ", channel_id)
+        print("CANCEL: ", cancel)
     except:
         channel_id = config["discord_channel_id"]
         print("EXCEPT CHANNEL_ID: ", channel_id)
+        print("EXCEPT CANCEL: ", cancel)
         history_days = 30
-
-    prompt = config["prompt"]
-    model = config["davinci"]
 
     print("DISCORD BOT ENTERED")
 
     # Create a Discord client
-    discord_token = os.getenv("DISCORD_TOKEN")  # if using python .env file
-    intents = discord.Intents.default()
-    intents.message_content = True
-    client = discord.Client(intents=intents)
+    if not cancel:
+        discord_token = os.getenv("DISCORD_TOKEN")  # if using python .env file
+        intents = discord.Intents.default()
+        intents.message_content = True
+        client = discord.Client(intents=intents)
+    else:
+        print("CANCELLED")
+        return
 
     if client.is_closed():
         print('Closed client: ', client.status)
+        sys.exit()
     else:
         print('Opened client:', client.status)
 
@@ -74,9 +89,14 @@ async def main():
     @client.event
     async def on_disconnect():
         print(f'{client.user} has disconnected from Discord!')
+
     try:
-        task = asyncio.create_task(client.start(discord_token))
-        await asyncio.wait_for(task, timeout=15)
+        if not cancel:
+            task = asyncio.create_task(client.start(discord_token))
+            await asyncio.wait_for(task, config["timeout"])
+        else:
+            print("TASK CANCELLED")
+            sys.exit()
 
         print("Client User: ", client.user)
         print(f'{client.user} status: {client.status}')
@@ -84,7 +104,7 @@ async def main():
         print(f'{client.user} current activity: {client.activity}')
         print("CLIENT STARTED SUCCESSFULLY", client.status)
     except asyncio.TimeoutError:
-        print("CLIENT TIMEOUT ERROR")
+        print("CLIENT TIMEOUT")
     except discord.errors.LoginFailure as exc:
         print(f'Error: {exc}')
     except discord.errors.ClientException as exc1:
@@ -94,8 +114,7 @@ async def main():
     except discord.errors.DiscordException as exc4:
         print(f'Error: {exc4}')
 
-    # print("DISCORD_TOKEN: ", discord_token) # to confirm operational
-
+    # TODO: add more channels to this list
     print("DISCORD BOT STARTED")
     if channel_id == None:
         # use channel_id from config id
@@ -111,13 +130,12 @@ async def main():
         try:
             channel = client.get_channel(int(channel_id))
             print("CHANNEL GET SUCCESS: ", channel)
+
         except:
             print("CHANNEL GET FAILED")
+            sys.exit()
 
-    task.cancel()  # cancel the task
-    # TODO: fix cancel so don't need to wait whole 15 seconds
-
-    print("History: ", history_days)
+    print("CHANNEL HISTORY: ", history_days)
     print("CHANNEL_ID POST: ", channel_id)
     print("CHANNEL POST: ", channel)
 
@@ -146,14 +164,18 @@ async def main():
     # question_counts = Counter()
     async for message in channel.history(limit=history_days, oldest_first=True):
         # process message here
+        print("MESSAGE CHANNEL: ", message.channel)
         print("MESSAGE: ", message.content)
         print("MESSAGE AUTHOR: ", message.author)
         print("MESSAGE TIMESTAMP: ", message.created_at)
+        link = f"https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id}"
+        print("LINK TO MESSAGE: ", link)
         print("\n")
         words = message.content.split()
         words = [word for word in words if word not in stopwords]
         word_counts.update(words)
 
+        # incoporate links when channel that has them is included
         # if re.match(f"^{question_words}", message.content, re.IGNORECASE):
         #     question_counts.update([message.content])
         # if re.search(r'\?$', message.content):
@@ -166,12 +188,49 @@ async def main():
         # top_3_questions = question_counts.most_common(3)
         # print("Top 3 commonly asked questions: ", top_3_questions)
         # print("\n")
-        outputFile.write(message.content)
+        print("DATA: ", message.content, file=outputFile)
+        print("AUTHOR: ", message.author, file=outputFile)
+        print("TIMESTAMP: ", message.created_at, file=outputFile)
+        print("LINK: ", link, file=outputFile)
         outputFile.write("\n")
 
+        # done with connection to discord
+        # task.cancel()
+        # TODO: fix cancel on complete so I don't need to wait whole 15 seconds
+
+    prompt = config["prompt"]
+    model = config["davinci"]
+    temp = config["temp"]
+    max_tokens = config["max_tokens"]
+
+    # TODO: clean file read/write logic
+    with open("output.txt", "r") as outputFile:
+        data = outputFile.read()
+
+    mprompt = prompt + \
+        f"Use primarily the data in this fileto answer:\n{data}\n"
+
+    GPTresponse = await chatGPTcall(mprompt, model, temp, max_tokens)
+    print("RESPONSE: ", GPTresponse.choices[0].text)
+    # outputFile.close()
+
+    with open("output.txt", "r") as outputFile:
+        lines = outputFile.readlines()
+        outputFile.close()
+
+    with open("output.txt", "w") as outputFile:
+        for line in lines:
+            if "RESPONSE:" not in line:
+                outputFile.write(line)
+        outputFile.write("RESPONSE: " + GPTresponse.choices[0].text + "\n")
     outputFile.close()
+
     return "SUCCESS"
 
 
-# asyncio.get_event_loop().run_until_complete(main())
+async def main():
+    twitterAPI = await initTwitter()
+    channel_history = await get_channel_history()
+    return "SUCCESS"
+
 asyncio.run(main())
