@@ -235,6 +235,27 @@ async def get_channel_history():
     outputFile.close()
 
     return "SUCCESS"
+    # outputFile.close()
+
+
+async def printTweetHistory(tweets, tweetFile):
+    count = 1
+    for tweet in tweets:
+        print("TWEET ", count, ": ", tweet.text)
+        tweetFile.write("TWEET " + str(count) + ": " + tweet.text + "\n")
+        print("TWEET AUTHOR ", count, ": ", tweet.user.screen_name)
+        tweetFile.write("TWEET AUTHOR " + str(count) +
+                        ": " + tweet.user.screen_name + "\n")
+        print("TWEET TIMESTAMP ", count, ": ", tweet.created_at)
+        tweetFile.write("TWEET TIMESTAMP " + str(count) +
+                        ": " + str(tweet.created_at) + "\n")
+        print("TWEET LINK ", count, ": ",
+              f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}")
+        tweetFile.write("TWEET LINK " + str(count) + ": " + "https://twitter.com/" +
+                        tweet.user.screen_name + "/status/" + str(tweet.id) + "\n")
+        tweetFile.write("\n")
+        count += 1
+    return tweets
 
 
 async def main():
@@ -243,24 +264,8 @@ async def main():
     tweets = twitterAPI.search_tweets(
         q=config["account_to_query"], count=config["tweet_history"])
 
-    count = 1
     with open("tweets.txt", "w") as tweetFile:
-        for tweet in tweets:
-            print("TWEET ", count, ": ", tweet.text)
-            tweetFile.write("TWEET " + str(count) + ": " + tweet.text + "\n")
-            print("TWEET AUTHOR ", count, ": ", tweet.user.screen_name)
-            tweetFile.write("TWEET AUTHOR " + str(count) +
-                            ": " + tweet.user.screen_name + "\n")
-            print("TWEET TIMESTAMP ", count, ": ", tweet.created_at)
-            tweetFile.write("TWEET TIMESTAMP " + str(count) +
-                            ": " + str(tweet.created_at) + "\n")
-            print("TWEET LINK ", count, ": ",
-                  f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}")
-            tweetFile.write("TWEET LINK " + str(count) + ": " + "https://twitter.com/" +
-                            tweet.user.screen_name + "/status/" + str(tweet.id) + "\n")
-            tweetFile.write("\n")
-            print("\n")
-            count += 1
+        search_results = await printTweetHistory(tweets, tweetFile)
 
     channel_history = await get_channel_history()
     return "SUCCESS"
