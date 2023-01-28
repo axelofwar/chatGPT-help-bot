@@ -24,6 +24,12 @@ with open("config.yml", "r") as file:
 
 openai.api_endpoint = config["OPENAI_ENDPOINT"]
 
+# get config params
+prompt = config["prompt"]
+model = config["davinci"]
+temp = config["temp"]
+max_tokens = config["max_tokens"]
+
 
 async def chatGPTcall(mPrompt, mModel, mTemp, mTokens):  # function for ChatGPT call
     response = openai.Completion.create(
@@ -49,14 +55,15 @@ async def initTwitter():  # function for initializing Twitter API
     return api
 
 
-async def get_channel_history():
-    print("TRY UI.MAIN() IN APP.PY")
+async def get_channel_history():  # function for intializing Discord client and getting desired channel history
     task = asyncio.create_task(ui.main())
     try:
         channel_id, history_days, cancel = await task
+        print("UI SUCCESS: APP.PY USED UI VALUES")
         print("UI CHANNEL_ID: ", channel_id)
         print("CANCEL: ", cancel)
     except:
+        print("UI FAILED/EMPTY: APP.PY USED DEFAULTS")
         channel_id = config["discord_channel_id"]
         print("EXCEPT CHANNEL_ID: ", channel_id)
         print("EXCEPT CANCEL: ", cancel)
@@ -82,6 +89,7 @@ async def get_channel_history():
 
     @client.event
     async def on_ready():
+        # ensure the bot is ready and not stuck in a current activity
         print("The bot is ready!")
         print(f'{client.user} has connected to Discord!')
         print(f'{client.user} status: {client.status}')
@@ -93,6 +101,8 @@ async def get_channel_history():
         print(f'{client.user} has disconnected from Discord!')
 
     try:
+        # start discord client
+        # TODO: improve logic so that client closes on complete instead of timeout required
         if not cancel:
             task = asyncio.create_task(client.start(discord_token))
             await asyncio.wait_for(task, config["timeout"])
@@ -100,6 +110,7 @@ async def get_channel_history():
             print("TASK CANCELLED")
             sys.exit()
 
+        # TODO: modify to display this info properly
         print("Client User: ", client.user)
         print(f'{client.user} status: {client.status}')
         print(f'{client.user} is connected to the following guild:')
@@ -141,30 +152,40 @@ async def get_channel_history():
     print("CHANNEL_ID POST: ", channel_id)
     print("CHANNEL POST: ", channel)
 
-    filename = 'discord.txt'
-
-    if os.path.exists(filename):
-        outputFile = open(filename, mode='r+')
-    else:
-        outputFile = open(filename, 'x')
-
-    stopwords = ["the", "and", "I", "to", "in", "a", "of", "is", "it",
-                 "you", "that", "he", "was", "for", "on", "are", "as",
-                 "with", "his", "they", "I'm", "at", "be", "this", "have",
-                 "from", "or", "one", "had", "by", "word", "but", "not", "what",
-                 "all", "were", "we", "when", "your", "can", "said", "there", "use",
-                 "an", "each", "which", "she", "do", "how", "their", "if", "will",
-                 "up", "other", "about", "out", "many", "then", "them", "these", "so",
-                 "some", "her", "would", "make", "like", "him", "into", "time", "has",
-                 "look", "two", "more", "write", "go", "see", "number", "no", "way",
-                 "could", "people", "my", "than", "first", "water", "been", "call",
-                 "who", "oil", "its", "now", "find", "long", "down", "day", "did",
-                 "get", "come", "made", "may", "part", "<#943011412219920415>"]
     # question_words = ["what", "when", "where", "who",
     #                   "why", "how", "can", "could", "would", "should"]
     word_counts = Counter()
     # question_counts = Counter()
-    async for message in channel.history(limit=history_days, oldest_first=True):
+    channel_history = channel.history(limit=history_days, oldest_first=True)
+
+    # done with connection to discord
+    # task.cancel()
+    # TODO: fix cancel on complete so I don't need to wait whole 15 seconds
+    return channel, channel_history
+
+
+async def printDiscordHistory(channel_history, outputFile):
+    word_counts = Counter()
+    # question_counts = Counter()
+
+    async for message in channel_history:
+
+        # question_words = ["what", "when", "where", "who",
+        #                   "why", "how", "can", "could", "would", "should"]
+
+        stopwords = ["the", "and", "I", "to", "in", "a", "of", "is", "it",
+                     "you", "that", "he", "was", "for", "on", "are", "as",
+                     "with", "his", "they", "I'm", "at", "be", "this", "have",
+                     "from", "or", "one", "had", "by", "word", "but", "not", "what",
+                     "all", "were", "we", "when", "your", "can", "said", "there", "use",
+                     "an", "each", "which", "she", "do", "how", "their", "if", "will",
+                     "up", "other", "about", "out", "many", "then", "them", "these", "so",
+                     "some", "her", "would", "make", "like", "him", "into", "time", "has",
+                     "look", "two", "more", "write", "go", "see", "number", "no", "way",
+                     "could", "people", "my", "than", "first", "water", "been", "call",
+                     "who", "oil", "its", "now", "find", "long", "down", "day", "did",
+                     "get", "come", "made", "may", "part", "<#943011412219920415>"]
+
         # process message here
         print("MESSAGE CHANNEL: ", message.channel)
         print("MESSAGE: ", message.content)
@@ -196,46 +217,7 @@ async def get_channel_history():
         print("LINK: ", link, file=outputFile)
         outputFile.write("\n")
 
-        # done with connection to discord
-        # task.cancel()
-        # TODO: fix cancel on complete so I don't need to wait whole 15 seconds
-
-    prompt = config["prompt"]
-    model = config["davinci"]
-    temp = config["temp"]
-    max_tokens = config["max_tokens"]
-
-    # TODO: clean file read/write logic
-    with open("discord.txt", "r") as outputFile:
-        data = outputFile.read()
-
-    mprompt = prompt + \
-        f"Use primarily the data in this fileto answer:\n{data}\n"
-
-    GPTresponse = await chatGPTcall(mprompt, model, temp, max_tokens)
-    print("RESPONSE: ", GPTresponse.choices[0].text)
-
-    # TODO: modify to use r+ for read/write and make one open call
-    with open("output.txt", "r") as outputFile:
-        lines = outputFile.readlines()
-        outputFile.close()
-
-    with open("output.txt", "w") as outputFile:
-        found_response = False
-        for line in lines:
-            if "RESPONSE:" in line:
-                if not found_response:
-                    outputFile.write(
-                        "RESPONSE:" + GPTresponse.choices[0].text + "\n")
-                    found_response = True
-            else:
-                outputFile.write(line)
-        if not found_response:
-            outputFile.write("RESPONSE: " + GPTresponse.choices[0].text + "\n")
-    outputFile.close()
-
-    return "SUCCESS"
-    # outputFile.close()
+    return outputFile
 
 
 async def printTweetHistory(tweets, tweetFile):
@@ -258,16 +240,65 @@ async def printTweetHistory(tweets, tweetFile):
     return tweets
 
 
+async def update_output_file(response):
+    # TODO: modify to use r+ for read/write and make one open call
+    with open("output.txt", "r") as outputFile:
+        lines = outputFile.readlines()
+        outputFile.close()
+
+    with open("output.txt", "w") as outputFile:
+        found_response = False
+        for line in lines:
+            if "RESPONSE:" in line:
+                if not found_response:
+                    outputFile.write(
+                        "RESPONSE:" + response.choices[0].text + "\n")
+                    found_response = True
+            else:
+                outputFile.write(line)
+        if not found_response:
+            outputFile.write("RESPONSE: " + response.choices[0].text + "\n")
+    outputFile.close()
+    return "OUTPUT FILE UPDATED"
+
+
 async def main():
+    # init twitter API
     twitterAPI = await initTwitter()
+
     # get all mentions of [account_to_query] in [tweet_history] days
     tweets = twitterAPI.search_tweets(
         q=config["account_to_query"], count=config["tweet_history"])
 
+    # open file to write to
     with open("tweets.txt", "w") as tweetFile:
         search_results = await printTweetHistory(tweets, tweetFile)
+    # returns tweets as a list of Tweet objects
 
-    channel_history = await get_channel_history()
+    # get channel & history from UI or defaults - modify to pass params?
+    channel, channel_history = await get_channel_history()
+    # returns channel object and list of message objects
+
+    # TODO: clean file read/write logic so updates can be written and read from same opened instance
+    with open("discord.txt", "w") as outputFile:
+        # print chanel history to file
+        discord_history = await printDiscordHistory(channel_history, outputFile)
+        # returns list of message objects
+    with open("discord.txt", "r") as outputFile:
+        discord_history = outputFile.read()
+        # returns string of discord history
+    mprompt = prompt + \
+        f"Use primarily the data in this fileto answer:\n{discord_history}\n"
+
+    GPTresponse = await chatGPTcall(mprompt, model, temp, max_tokens)
+    print("RESPONSE: ", GPTresponse.choices[0].text)
+
+    updateOutput = await update_output_file(GPTresponse)
+    # prints response to terminal + output file
+
+    # TODO: do stuff with search_results from twitter + channel & channel_history from discord
+
+    print("\n", updateOutput)
     return "SUCCESS"
 
 asyncio.run(main())
