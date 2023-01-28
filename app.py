@@ -42,6 +42,8 @@ async def chatGPTcall(mPrompt, mModel, mTemp, mTokens):  # function for ChatGPT 
 async def initTwitter():  # function for initializing Twitter API
     auth = tweepy.OAuthHandler(
         os.getenv("TWITTER_API_KEY"), os.getenv("TWITTER_API_SECRET_KEY"))
+    auth.set_access_token(os.getenv("TWITTER_ACCESS_TOKEN"),
+                          os.getenv("TWITTER_ACCESS_TOKEN_SECRET"))
     api = tweepy.API(auth)
     print("TWITTER API INITIALIZED")
     return api
@@ -139,7 +141,7 @@ async def get_channel_history():
     print("CHANNEL_ID POST: ", channel_id)
     print("CHANNEL POST: ", channel)
 
-    filename = 'output.txt'
+    filename = 'discord.txt'
 
     if os.path.exists(filename):
         outputFile = open(filename, mode='r+')
@@ -204,7 +206,7 @@ async def get_channel_history():
     max_tokens = config["max_tokens"]
 
     # TODO: clean file read/write logic
-    with open("output.txt", "r") as outputFile:
+    with open("discord.txt", "r") as outputFile:
         data = outputFile.read()
 
     mprompt = prompt + \
@@ -212,17 +214,24 @@ async def get_channel_history():
 
     GPTresponse = await chatGPTcall(mprompt, model, temp, max_tokens)
     print("RESPONSE: ", GPTresponse.choices[0].text)
-    # outputFile.close()
 
+    # TODO: modify to use r+ for read/write and make one open call
     with open("output.txt", "r") as outputFile:
         lines = outputFile.readlines()
         outputFile.close()
 
     with open("output.txt", "w") as outputFile:
+        found_response = False
         for line in lines:
-            if "RESPONSE:" not in line:
+            if "RESPONSE:" in line:
+                if not found_response:
+                    outputFile.write(
+                        "RESPONSE:" + GPTresponse.choices[0].text + "\n")
+                    found_response = True
+            else:
                 outputFile.write(line)
-        outputFile.write("RESPONSE: " + GPTresponse.choices[0].text + "\n")
+        if not found_response:
+            outputFile.write("RESPONSE: " + GPTresponse.choices[0].text + "\n")
     outputFile.close()
 
     return "SUCCESS"
@@ -230,6 +239,29 @@ async def get_channel_history():
 
 async def main():
     twitterAPI = await initTwitter()
+    # get all mentions of [account_to_query] in [tweet_history] days
+    tweets = twitterAPI.search_tweets(
+        q=config["account_to_query"], count=config["tweet_history"])
+
+    count = 1
+    with open("tweets.txt", "w") as tweetFile:
+        for tweet in tweets:
+            print("TWEET ", count, ": ", tweet.text)
+            tweetFile.write("TWEET " + str(count) + ": " + tweet.text + "\n")
+            print("TWEET AUTHOR ", count, ": ", tweet.user.screen_name)
+            tweetFile.write("TWEET AUTHOR " + str(count) +
+                            ": " + tweet.user.screen_name + "\n")
+            print("TWEET TIMESTAMP ", count, ": ", tweet.created_at)
+            tweetFile.write("TWEET TIMESTAMP " + str(count) +
+                            ": " + str(tweet.created_at) + "\n")
+            print("TWEET LINK ", count, ": ",
+                  f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}")
+            tweetFile.write("TWEET LINK " + str(count) + ": " + "https://twitter.com/" +
+                            tweet.user.screen_name + "/status/" + str(tweet.id) + "\n")
+            tweetFile.write("\n")
+            print("\n")
+            count += 1
+
     channel_history = await get_channel_history()
     return "SUCCESS"
 
