@@ -23,3 +23,6 @@ toml==0.10.2
 tqdm==4.62.3
 urllib3==1.26.7
 Werkzeug==2.0.2
+tweepy==4.12.1
+discord.py==2.1.0
+PyYAML==6.0
