@@ -1,5 +1,6 @@
 DISCORD_CHANNEL_ID: '943008506397749258'
 OPENAI_ENDPOINT: https://api.openai.com/v1
+account_to_query: axelofwar
 ada: text-ada-001
 babbage: text-babbage-001
 curie: text-curie-001
@@ -11,3 +12,4 @@ max_tokens: 150
 prompt: 'What has Axelofwar been up to lately? '
 temp: 0.9
 timeout: 15
+tweet_history: 10
