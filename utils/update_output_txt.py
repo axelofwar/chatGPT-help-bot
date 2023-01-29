@@ -1,3 +1,6 @@
+from utils import twitter_tools as th
+
+
 async def update_output_file(response):
     # TODO: modify to use r+ for read/write and make one open call
     with open("outputs/output.txt", "r") as outputFile:
@@ -17,4 +20,5 @@ async def update_output_file(response):
         if not found_response:
             outputFile.write("RESPONSE: " + response.choices[0].text + "\n")
     outputFile.close()
-    return "OUTPUT FILE UPDATED"
+    th.running = False
+    return th.running

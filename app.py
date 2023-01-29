@@ -126,21 +126,18 @@ async def main():
     # init twitter API
     twitterAPI = await th.initTwitter()
 
-    # get all mentions of [account_to_query] in [tweet_history] days
-    tweets = twitterAPI.search_tweets(
-        q=config["account_to_query"], count=config["tweet_history"])
-
-    # open file to write to
-    with open("outputs/tweets.txt", "w") as tweetFile:
-        search_results = await th.printTweetHistory(tweets, tweetFile)
-    # returns tweets as a list of Tweet objects
-
-    task = asyncio.create_task(ui.main())
     try:
+        task = asyncio.create_task(ui.main())
         channel_id, history_days, cancel = await task
         print("UI SUCCESS: APP.PY USED UI VALUES")
         print("UI CHANNEL_ID: ", channel_id)
         print("CANCEL: ", cancel)
+
+        tweets = await th.call_listener(twitterAPI, config["account_to_query"], cancel)
+        # open file to write to
+        with open("outputs/tweets.txt", "w") as tweetFile:
+            search_results = await th.printTweetHistory(tweets, tweetFile)
+
     except:
         print("UI FAILED/EMPTY: APP.PY USED DEFAULTS")
         channel_id = config["discord_channel_id"]
@@ -151,31 +148,37 @@ async def main():
     # get channel & history from UI or defaults - modify to pass params?
     if not cancel:
         channel, channel_history = await get_channel_history(channel_id, history_days, cancel)
-    # returns channel object and list of message objects
-    else:
-        print("CANCELLED")
+
+    while th.running:
+        tweets = await th.call_listener(
+            twitterAPI, config["account_to_query"], cancel)
+
+        # TODO: clean file read/write logic so updates can be written and read from same opened instance
+        with open("outputs/discord.txt", "w") as outputFile:
+            # print chanel history to file
+            discord_history = await dh.printDiscordHistory(channel_history, outputFile)
+            # returns list of message objects
+        with open("outputs/discord.txt", "r") as outputFile:
+            discord_history = outputFile.read()
+            # returns string of discord history
+        mprompt = prompt + \
+            f"Use primarily the data in this file to answer:\n{discord_history}\n"
+
+        GPTresponse = await chatGPTcall(mprompt, model, temp, max_tokens)
+        print("RESPONSE: ", GPTresponse.choices[0].text)
+
+        running = updateOutput = await uout.update_output_file(GPTresponse)
+        # prints response to terminal + output file
+
+        # TODO: do stuff with search_results from twitter + channel & channel_history from discord
+
+        print("\n", "RUNNING: ", running)
+        # return "SUCCESS"
+
+    if cancel or not th.running:
+        print("ENDED")
+        await th.closeListener()
         sys.exit()
-
-    # TODO: clean file read/write logic so updates can be written and read from same opened instance
-    with open("outputs/discord.txt", "w") as outputFile:
-        # print chanel history to file
-        discord_history = await dh.printDiscordHistory(channel_history, outputFile)
-        # returns list of message objects
-    with open("outputs/discord.txt", "r") as outputFile:
-        discord_history = outputFile.read()
-        # returns string of discord history
-    mprompt = prompt + \
-        f"Use primarily the data in this file to answer:\n{discord_history}\n"
-
-    GPTresponse = await chatGPTcall(mprompt, model, temp, max_tokens)
-    print("RESPONSE: ", GPTresponse.choices[0].text)
-
-    updateOutput = await uout.update_output_file(GPTresponse)
-    # prints response to terminal + output file
-
-    # TODO: do stuff with search_results from twitter + channel & channel_history from discord
-
-    print("\n", updateOutput)
-    return "SUCCESS"
+    return sys.exit()
 
 asyncio.run(main())

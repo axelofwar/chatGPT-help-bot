@@ -1,5 +1,6 @@
 import tkinter as tk
 import yaml
+from utils import twitter_tools as th
 
 
 class UI:
@@ -18,7 +19,7 @@ class UI:
         screen_width = self.window.winfo_screenwidth()
         screen_height = self.window.winfo_screenheight()
         width = 200
-        height = 175
+        height = 200
 
         x = (screen_width / 2) - (width / 2)
         y = (screen_height / 2) - (height / 2)
@@ -48,6 +49,9 @@ class UI:
             self.window, text="Cancel", command=self.cancel)
         cancel_button.pack()
 
+        stop_button = tk.Button(self.window, text="Stop", command=self.stop)
+        stop_button.pack()
+
     def update_history_days(self, value):
         self.history_days = float(value)
 
@@ -60,21 +64,24 @@ class UI:
 
         self.config["DISCORD_CHANNEL_ID"] = self.channel_id
 
-        with open("utils/config.yml", "r+") as file:
-            config = yaml.load(file, Loader=yaml.FullLoader)
-            config["DISCORD_CHANNEL_ID"] = self.channel_id
-            file.seek(0)  # move the cursor to the beginning of the file
-            yaml.dump(config, file)
-
         print("CONFIG UPDATED")
         self.close_window()
-        print("WINDOW DESTROYED")
+        # print("WINDOW DESTROYED")
+        return "SUBMITTED"
 
     def cancel(self):
         self.close_window()
         print("CANCELLED")
         self.cancelFlag = True
         return "CANCELLED"
+
+    def stop(self):
+        th.running = False
+        self.close_window()
+        th.closeListener()
+        print("STOPPED")
+        self.cancelFlag = True
+        return self.window.destroy()
 
     def get_result(self):
         return self.channel_id, self.history_days, self.cancelFlag
