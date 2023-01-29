@@ -3,7 +3,7 @@ import yaml
 
 
 class UI:
-    file = open("config.yml", "r+")
+    file = open("utils/config.yml", "r+")
     config = yaml.load(file, Loader=yaml.FullLoader)
 
     def __init__(self):
@@ -60,7 +60,7 @@ class UI:
 
         self.config["DISCORD_CHANNEL_ID"] = self.channel_id
 
-        with open("config.yml", "r+") as file:
+        with open("utils/config.yml", "r+") as file:
             config = yaml.load(file, Loader=yaml.FullLoader)
             config["DISCORD_CHANNEL_ID"] = self.channel_id
             file.seek(0)  # move the cursor to the beginning of the file
