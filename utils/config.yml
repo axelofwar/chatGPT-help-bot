@@ -1,3 +1,4 @@
+APP_RUNNNIG: true
 DISCORD_CHANNEL_ID: '943008506397749258'
 OPENAI_ENDPOINT: https://api.openai.com/v1
 account_to_query: axelofwar

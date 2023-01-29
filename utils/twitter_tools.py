@@ -1,5 +1,11 @@
 import tweepy
 import os
+import yaml
+
+with open("utils/config.yml", "r") as file:
+    config = yaml.load(file, Loader=yaml.FullLoader)
+
+running = True
 
 
 async def initTwitter():  # function for initializing Twitter API
@@ -10,6 +16,22 @@ async def initTwitter():  # function for initializing Twitter API
     api = tweepy.API(auth)
     print("TWITTER API INITIALIZED")
     return api
+
+
+async def call_listener(api, account, cancel):
+    if not cancel:
+        # get all mentions of [account_to_query] in [tweet_history] days
+        tweets = api.search_tweets(
+            q=account, count=config["tweet_history"])
+        return tweets
+    else:
+        running = False
+        print("CANCELLED")
+        return running
+
+
+async def closeListener():
+    running = False
 
 
 async def printTweetHistory(tweets, tweetFile):
