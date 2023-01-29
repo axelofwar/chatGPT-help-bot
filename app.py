@@ -22,7 +22,7 @@ if not openai.api_key:
     openai.api_key = ""
     print("OPENAI API KEY NOT FOUND")
 
-with open("config.yml", "r") as file:
+with open("utils/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 
 openai.api_endpoint = config["OPENAI_ENDPOINT"]
