@@ -133,11 +133,12 @@ async def main():
         print("UI CHANNEL_ID: ", channel_id)
         print("CANCEL: ", cancel)
 
-        tweets = await th.call_listener(twitterAPI, config["account_to_query"], cancel)
+        runner = await th.init_listener(twitterAPI, config["account_to_query"], cancel)
+
         # open file to write to
         with open("outputs/tweets.txt", "w") as tweetFile:
             search_results = await th.printTweetHistory(tweets, tweetFile)
-
+        print("RUNNER: ", runner)
     except:
         print("UI FAILED/EMPTY: APP.PY USED DEFAULTS")
         channel_id = config["discord_channel_id"]
@@ -150,7 +151,7 @@ async def main():
         channel, channel_history = await get_channel_history(channel_id, history_days, cancel)
 
     while th.running:
-        tweets = await th.call_listener(
+        tweets = await th.call_once(
             twitterAPI, config["account_to_query"], cancel)
 
         # TODO: clean file read/write logic so updates can be written and read from same opened instance
