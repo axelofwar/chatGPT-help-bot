@@ -9,6 +9,7 @@ import urllib.parse
 import re
 # from collections import Counter
 from dotenv import load_dotenv
+
 from utils import ui
 from utils import twitter_tools as th
 from utils import discord_tools as dh
