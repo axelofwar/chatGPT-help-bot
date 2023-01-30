@@ -10,7 +10,7 @@ data_channel_id: "943008506397749258"
 chat_channel_id: "943003619949690941"
 discord_channel_id_2: "943011412219920415"
 max_tokens: 150
-prompt: "What has Axelofwar been up to lately? "
+prompt: "What has Axelofwar been up to lately?"
 temp: 0.9
-timeout: 10
+timeout: 5
 tweet_history: 15

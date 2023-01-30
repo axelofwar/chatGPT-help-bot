@@ -14,8 +14,6 @@ with open("utils/config.yml", "r") as file:
 
 
 async def init_discord(cancel):
-    print("DISCORD BOT ENTERED")
-
     # Create a Discord client
     if not cancel:
         intents = discord.Intents.default()
@@ -89,24 +87,24 @@ async def get_channel_history(channel_id, history_days, cancel):
 
     # TODO: add more channels to this list
     print("DISCORD BOT STARTED")
-    if channel_id == None:
-        # use channel_id from config id
-        channel_value = int(config["data_channel_id"])
-        print("CHANNEL_VALUE: ", channel_value)
-        channel = client.get_channel(channel_value)
-        channel_id = channel_value
-        print("CHANNEL GET SUCCESS FROM NONE: ", channel)
+    # if channel_id == None:
+    #     # use channel_id from config id
+    #     channel_value = int(config["data_channel_id"])
+    #     print("CHANNEL_VALUE: ", channel_value)
+    #     channel = client.get_channel(channel_value)
+    #     channel_id = channel_value
+    #     print("CHANNEL GET SUCCESS FROM NONE: ", channel)
 
-    else:
-        print("CHANNEL VALUE RECIEVED: ", channel_id)
-        # use channel_id passed into UI
-        try:
-            channel = client.get_channel(int(channel_id))
-            print("CHANNEL GET SUCCESS: ", channel)
+    # else:
+    #     print("CHANNEL VALUE RECIEVED: ", channel_id)
+    #     # use channel_id passed into UI
+    try:
+        channel = client.get_channel(int(channel_id))
+        print("CHANNEL GET SUCCESS: ", channel)
 
-        except:
-            print("CHANNEL GET FAILED")
-            sys.exit()
+    except:
+        print("CHANNEL GET FAILED")
+        sys.exit()
 
     print("CHANNEL HISTORY: ", history_days)
     print("CHANNEL_ID POST: ", channel_id)

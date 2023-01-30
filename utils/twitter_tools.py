@@ -27,7 +27,7 @@ async def call_once(api, account, cancel):
     if not cancel:
         tweets = api.search_tweets(
             q=account, count=config["tweet_history"])
-        print("TWEET HISTORY CALLED ONCE")
+        print("TWEET HISTORY CALLED ONCE \n")
         return tweets
     else:
         print("CANCELLED")
