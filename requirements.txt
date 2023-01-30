@@ -1,3 +1,4 @@
+autopep8==1.5.7
 MarkupSafe==2.0.1
 numpy==1.21.3
 openai==0.19.0
@@ -12,4 +13,9 @@ PyYAML
 aiohttp
 async_lru==1.0.3
 oauthlib==3.2.0
+textblob==0.15.3
+dataset
+# platform
+better_profanity
+nltk
 twitter-stream.py
