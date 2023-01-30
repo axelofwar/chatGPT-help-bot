@@ -1,5 +1,6 @@
 import tkinter as tk
 import yaml
+
 from utils import twitter_tools as th
 
 
@@ -57,7 +58,7 @@ class UI:
 
     def submit(self):
         if self.channel_id.get() == "":
-            self.channel_id = self.config["discord_channel_id"]
+            self.channel_id = self.config["data_channel_id"]
             # TODO: add error message instead of defaulting to config
         else:
             self.channel_id = self.channel_id.get()
