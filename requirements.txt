@@ -3,7 +3,6 @@ certifi==2021.10.8
 charset-normalizer==2.0.7
 click==8.0.3
 et-xmlfile==1.1.0
-Flask==2.0.2
 idna==3.3
 itsdangerous==2.0.1
 Jinja2==3.0.2
@@ -17,7 +16,7 @@ pycodestyle==2.8.0
 python-dateutil==2.8.2
 python-dotenv==0.19.2
 pytz==2021.3
-requests==2.26.0
+requests==2.27.0
 six==1.16.0
 toml==0.10.2
 tqdm==4.62.3
@@ -25,4 +24,8 @@ urllib3==1.26.7
 Werkzeug==2.0.2
 tweepy==4.12.1
 discord.py==2.1.0
-PyYAML==6.0
+PyYAML
+aiohttp
+async_lru==1.0.3
+oauthlib==3.2.0
+twitter-stream.py
