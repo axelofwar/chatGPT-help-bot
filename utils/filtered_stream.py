@@ -5,13 +5,14 @@ from dotenv import load_dotenv
 import yaml
 load_dotenv()
 
-with open("utils/config.yml", "r") as file:
+bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
+update_flag = False
+remove_flag = False  # TODO: fix remove rule functionality
+
+
+with open("utils/yamls/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 # To set your enviornment variables in your terminal run the following line:
-
-global update_rule
-update_rule = False
-bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
 
 
 def bearer_oauth(r):
@@ -57,24 +58,28 @@ def delete_all_rules(rules):
     print(json.dumps(response.json()))
 
 
-def set_rules(delete, update_rule):
+def set_rules(delete, update_flag):
     # You can adjust the rules if needed
-    axel_rules = [
-        {"value": "@"+config["account_to_query"], "tag": "accounts"},
-        {"value": "@y00tsNFT", "tag": "accounts"},
-    ]
-    print("UPDATE VALUE IN SET: ", update_rule)
-    if update_rule:
+    with open("utils/yamls/rules.yml", "r") as file:
+        axel_rules = yaml.load(file, Loader=yaml.FullLoader)
+        # axel_rules = file.read()
+
+    # [{"value": ["ADD_RULE"], "tag": "config-rule"}, ]
+
+    print("RULES SAVED TO rules.yml")
+    print("UPDATE VALUE IN SET: ", update_flag)
+    if update_flag:
         axel_rules = axel_rules + \
-            [{"value": config["ADD_RULE"], "tag": "config-rule"}, ]
-        print("RULE VALUE UPDATED: ", update_rule)
-        print(("ADDED RULES USED: ", axel_rules))
-    else:
-        axel_rules = [
-            {"value": "@"+config["account_to_query"], "tag": "accounts"},
-            {"value": "@y00tsNFT", "tag": "accounts"},
-        ]
-        print("DEFAULT RULES USED: ", axel_rules)
+            [{"value": config["ADD_RULE"], "tag": config["ADD_TAG"]}, ]
+        with open("utils/yamls/rules.yml", "w") as file:
+            file.write(str(axel_rules))
+
+        print("RULE VALUE UPDATED:\n", update_flag)
+        print(("ADDED RULES USED:\n", axel_rules))
+
+    # with open("utils/rules.txt", "w") as file:
+    #     file.write(str(axel_rules))
+    #     print("RULES SAVED TO FILE")
 
     payload = {"add": axel_rules}
     response = requests.post(
@@ -90,33 +95,57 @@ def set_rules(delete, update_rule):
     print(json.dumps(response.json()))
 
 
+# TODO: fix remove rule functionality
+def remove_rules(rules):
+    remove_it = config["REMOVE_RULE"]
+    if remove_it == "":
+        print("NO RULE IN CONFIG TO REMOVE")
+        return None
+    new_rules = []
+    for rule in rules:
+        if rule["value"] != remove_it:
+            new_rules.append(rule)
+    print("NEW RULES: ", new_rules)
+    with open("utils/yamls/rules.yml", "w") as file:
+        file.write(str(new_rules))
+    with open("utils/yamls/config.yml", "w") as file:
+        config["REMOVE_RULE"] = ""
+        yaml.dump(config, file)
+        print("REMOVE RULE RESET TO EMPTY")
+
+    set_rules(new_rules, update_flag)
+    remove_flag = True
+    return remove_flag
+
+
 def update_rules():
-    with open("utils/config.yml", "r") as file:
+    with open("utils/yamls/config.yml", "r") as file:
         config = yaml.load(file, Loader=yaml.FullLoader)
 
     if "ADD_RULE" in config:
         rule = config["ADD_RULE"]
-        update_rule = True
-        print("UPDATED TO TRUE: ", update_rule)
+        update_flag = True
+        print("UPDATED TO TRUE: ", update_flag)
     else:
         print("No rule to add")
 
     if rule == "":
-        update_rule = False
-        print("UPDATED TO FALSE: ", update_rule)
+        update_flag = False
+        print("UPDATED TO FALSE: ", update_flag)
     else:
         print("SETTING NEW RULES")
         delete = delete_all_rules(get_rules())
-        set_rules(delete, update_rule)
-        # update_rule = False
 
-    with open("utils/config.yml", "w") as file:
+        set_rules(delete, update_flag)
+        # update_flag = False
+
+    with open("utils/yamls/config.yml", "w") as file:
         config["ADD_RULE"] = ""
         yaml.dump(config, file)
         print("RULE RESET TO EMPTY")
 
 
-def get_stream(set, update_rule):
+def get_stream(set, update_flag, remove_flag):
     response = requests.get(
         "https://api.twitter.com/2/tweets/search/stream", auth=bearer_oauth, stream=True,
     )
@@ -130,10 +159,14 @@ def get_stream(set, update_rule):
     for response_line in response.iter_lines():
         if response_line:
             print("GOT RESPONSE")
-            if update_rule:
+            if update_flag:
                 print("UPDATING RULES")
-                update_rules(config["ADD_RULE"])
-                update_rule = False
+                update_rules()
+                update_flag = False
+            if remove_flag:
+                print("REMOVING RULES")
+                remove_rules(get_rules())
+                remove_flag = False
 
             json_response = json.loads(response_line)
             print(json.dumps(json_response, indent=4, sort_keys=True))
@@ -142,8 +175,8 @@ def get_stream(set, update_rule):
 def main():
     rules = get_rules()
     delete = delete_all_rules(rules)
-    set = set_rules(delete, update_rule)
-    get_stream(set, update_rule)
+    set = set_rules(delete, update_flag)
+    get_stream(set, update_flag, remove_flag)
 
 
 if __name__ == "__main__":

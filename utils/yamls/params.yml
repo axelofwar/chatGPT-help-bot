@@ -1,0 +1,8 @@
+ada: text-ada-001
+babbage: text-babbage-001
+chat_channel_id: "943003619949690941"
+curie: text-curie-001
+davinci: text-davinci-003
+prompt: What has Axelofwar been up to lately?
+max_tokens: 150
+temp: 0.9
