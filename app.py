@@ -4,27 +4,36 @@ import yaml
 from utils import mod as tools
 from dotenv import load_dotenv
 
-
 load_dotenv()
 
 with open("utils/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
+
+with open("utils/params.yml", "r") as paramFile:
+    params = yaml.load(paramFile, Loader=yaml.FullLoader)
 
 # get config params
 # TODO: replace with external get prompt: discord vs. twitter
 # TODO: on tweet @ mention would require a trigger to call asyncio.run(main())
 # TODO: on discord chat would require a webhook to call asyncio.run(main())
 
-prompt = config["prompt"]
-model = config["davinci"]
-temp = config["temp"]
-max_tokens = config["max_tokens"]
+
+# Hardset params for main init
+prompt = params["prompt"]
+model = params["davinci"]
+temp = params["temp"]
+max_tokens = params["max_tokens"]
+
+data_channel_id = config["data_channel_id"]
+history_days = 30
+cancel = False
 
 
 async def main():
     # init twitter API
     twitterAPI = await tools.th.init_twitter()
 
+    # UNCOMMENT FOR UI INTERACTION
     # try:
     #     task = asyncio.create_task(tools.ui.main())
     #     data_channel_id, history_days, cancel = await task
@@ -42,12 +51,9 @@ async def main():
     #     print("UI FAILED/EMPTY: APP.PY USED DEFAULTS")
     #     data_channel_id = config["data_channel_id"]
     #     print("EXCEPT CHANNEL_ID: ", data_channel_id)
-    #     print("EXCEPT CANCEL: ", cancel)
+    #     print("EXCEPT CANCEL VALUE: ", cancel)
     #     history_days = 30
 
-    data_channel_id = config["data_channel_id"]
-    history_days = 30
-    cancel = False
     # get channel & history from UI or defaults - modify to pass params?
     if not cancel:
         data_channel, data_channel_history = await tools.dh.get_channel_history(data_channel_id, history_days, cancel)

@@ -6,7 +6,7 @@ with open("utils/yamls/rules.yml", "r") as file:
 
 
 def main():
-    fs.update_rules()
+    fs.remove_rules(axel_rules)
     return
 
 

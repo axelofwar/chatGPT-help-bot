@@ -63,7 +63,7 @@ class UI:
         else:
             self.channel_id = self.channel_id.get()
 
-        self.config["DISCORD_CHANNEL_ID"] = self.channel_id
+        self.config["UI_CHANNEL_ID"] = self.channel_id
 
         print("CONFIG UPDATED")
         self.close_window()

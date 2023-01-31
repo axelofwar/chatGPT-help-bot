@@ -6,5 +6,5 @@ from utils import twitter_tools as th
 from utils import update_output_txt as uout
 from utils import chat_gpt_tools as gpt
 
-with open("utils/config.yml", "r") as file:
+with open("utils/yamls/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
