@@ -8,7 +8,9 @@ load_dotenv()
 with open("utils/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 # To set your enviornment variables in your terminal run the following line:
-# export 'BEARER_TOKEN'='<your_bearer_token>'
+
+global update_rule
+update_rule = False
 bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
 
 
@@ -55,13 +57,26 @@ def delete_all_rules(rules):
     print(json.dumps(response.json()))
 
 
-def set_rules(delete):
+def set_rules(delete, update_rule):
     # You can adjust the rules if needed
-    sample_rules = [
+    axel_rules = [
         {"value": "@"+config["account_to_query"], "tag": "accounts"},
         {"value": "@y00tsNFT", "tag": "accounts"},
     ]
-    payload = {"add": sample_rules}
+    print("UPDATE VALUE IN SET: ", update_rule)
+    if update_rule:
+        axel_rules = axel_rules + \
+            [{"value": config["ADD_RULE"], "tag": "config-rule"}, ]
+        print("RULE VALUE UPDATED: ", update_rule)
+        print(("ADDED RULES USED: ", axel_rules))
+    else:
+        axel_rules = [
+            {"value": "@"+config["account_to_query"], "tag": "accounts"},
+            {"value": "@y00tsNFT", "tag": "accounts"},
+        ]
+        print("DEFAULT RULES USED: ", axel_rules)
+
+    payload = {"add": axel_rules}
     response = requests.post(
         "https://api.twitter.com/2/tweets/search/stream/rules",
         auth=bearer_oauth,
@@ -75,7 +90,33 @@ def set_rules(delete):
     print(json.dumps(response.json()))
 
 
-def get_stream(set):
+def update_rules():
+    with open("utils/config.yml", "r") as file:
+        config = yaml.load(file, Loader=yaml.FullLoader)
+
+    if "ADD_RULE" in config:
+        rule = config["ADD_RULE"]
+        update_rule = True
+        print("UPDATED TO TRUE: ", update_rule)
+    else:
+        print("No rule to add")
+
+    if rule == "":
+        update_rule = False
+        print("UPDATED TO FALSE: ", update_rule)
+    else:
+        print("SETTING NEW RULES")
+        delete = delete_all_rules(get_rules())
+        set_rules(delete, update_rule)
+        # update_rule = False
+
+    with open("utils/config.yml", "w") as file:
+        config["ADD_RULE"] = ""
+        yaml.dump(config, file)
+        print("RULE RESET TO EMPTY")
+
+
+def get_stream(set, update_rule):
     response = requests.get(
         "https://api.twitter.com/2/tweets/search/stream", auth=bearer_oauth, stream=True,
     )
@@ -89,6 +130,11 @@ def get_stream(set):
     for response_line in response.iter_lines():
         if response_line:
             print("GOT RESPONSE")
+            if update_rule:
+                print("UPDATING RULES")
+                update_rules(config["ADD_RULE"])
+                update_rule = False
+
             json_response = json.loads(response_line)
             print(json.dumps(json_response, indent=4, sort_keys=True))
 
@@ -96,8 +142,8 @@ def get_stream(set):
 def main():
     rules = get_rules()
     delete = delete_all_rules(rules)
-    set = set_rules(delete)
-    get_stream(set)
+    set = set_rules(delete, update_rule)
+    get_stream(set, update_rule)
 
 
 if __name__ == "__main__":
