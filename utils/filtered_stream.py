@@ -82,10 +82,16 @@ def set_rules(delete, update_flag):
     #     print("RULES SAVED TO FILE")
 
     # Reconnect stream if not active and set rules again
+    response = requests.get(
+        "https://api.twitter.com/2/tweets/search/stream/rules", auth=bearer_oauth
+    )
     rules = get_rules()
     if response.status_code != 200:
         delete_all_rules(rules)
         print("Reconnecting to the stream...")
+        with open("utils/config.yml", "w") as file:
+            config["RECONNECT_COUNT"] += 1
+            yaml.dump(config, file)
 
     payload = {"add": axel_rules}
     response = requests.post(
