@@ -1,10 +1,11 @@
-ADD_RULE: ''
+ADD_RULE: ""
 ADD_TAG: config-rule
 OPENAI_ENDPOINT: https://api.openai.com/v1
-REMOVE_RULE: ''
-UI_CHANNEL_ID: '943008506397749258'
+REMOVE_RULE: ""
+RECONNECT_COUNT: 0
+UI_CHANNEL_ID: "943008506397749258"
 account_to_query: axelofwar
-chat_channel_id: '943011412219920415'
-data_channel_id: '943008506397749258'
+chat_channel_id: "943011412219920415"
+data_channel_id: "943008506397749258"
 timeout: 5
 tweet_history: 15
