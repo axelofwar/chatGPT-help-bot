@@ -81,6 +81,12 @@ def set_rules(delete, update_flag):
     #     file.write(str(axel_rules))
     #     print("RULES SAVED TO FILE")
 
+    # Reconnect stream if not active and set rules again
+    rules = get_rules()
+    if response.status_code != 200:
+        delete_all_rules(rules)
+        print("Reconnecting to the stream...")
+
     payload = {"add": axel_rules}
     response = requests.post(
         "https://api.twitter.com/2/tweets/search/stream/rules",
@@ -113,6 +119,7 @@ def remove_rules(rules):
         yaml.dump(config, file)
         print("REMOVE RULE RESET TO EMPTY")
 
+    delete_all_rules(get_rules())
     set_rules(new_rules, update_flag)
     remove_flag = True
     return remove_flag
