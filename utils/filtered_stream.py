@@ -7,7 +7,7 @@ load_dotenv()
 
 bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
 update_flag = False
-remove_flag = False  # TODO: fix remove rule functionality
+remove_flag = False
 
 
 with open("utils/yamls/config.yml", "r") as file:
@@ -190,7 +190,7 @@ def get_username_by_author_id(author_id):
     return response.json()  # ["username"]
 
 
-def get_stream(set, update_flag, remove_flag):
+def get_stream(update_flag, remove_flag):
     response = requests.get(
         "https://api.twitter.com/2/tweets/search/stream", auth=bearer_oauth, stream=True,
     )
@@ -229,6 +229,7 @@ def get_stream(set, update_flag, remove_flag):
             print("\nTweet ID: ", id)
             tweet_data = get_data_by_id(id)
 
+            # print raw data dump
             # print("\nDATA BY ID: ", json.dumps(
             #     tweet_data, indent=4, sort_keys=True))
 
@@ -237,53 +238,63 @@ def get_stream(set, update_flag, remove_flag):
             print("\nAuthor: ", author)
             print("\nPublic Metrics: ", tweet_data["data"]["public_metrics"])
 
-            referenced = tweet_data["data"]["referenced_tweets"]
-            print("\nReferenced Tweets: ", referenced)
-            included_tweets = tweet_data["includes"]["tweets"]
-            included_users = tweet_data["includes"]["users"]
+            # if tweet_data["data"]["referenced_tweets"]:
+            if "referenced_tweets" in tweet_data["data"]:
+                # if tweet_data["data"]["referenced_tweets"]:
+                referenced = tweet_data["data"]["referenced_tweets"]
+                print("\nReferenced Tweets: ", referenced)
+            # if tweet_data["includes"]["tweets"]:
+            if "tweets" in tweet_data["includes"]:
+                included_tweets = tweet_data["includes"]["tweets"]
+                included_users = tweet_data["includes"]["users"]
 
             engagement_metrics = get_likes_retweets_impressions(id)
             print("\nFavorites: ", engagement_metrics["favorite_count"])
             print("\nRetweets: ", engagement_metrics["retweet_count"])
 
+            # print raw data dump
             # print("\nIncludes: ", json.dumps(
             #     included_tweets, indent=4, sort_keys=True))
             # print("\nIncludes Users: ", json.dumps(
             #     included_users, indent=4, sort_keys=True))
 
-            for iter in range(len(included_tweets)):
-                included = included_tweets[iter]
-                included_id = included["id"]
-                included_author_id = included["author_id"]
-                included_pub_metrics = included["public_metrics"]
+            if tweet_data["includes"]:
+                # loop to go through all referenced/included tweets
+                for iter in range(len(included_tweets)):
+                    included = included_tweets[iter]
+                    included_id = included["id"]
+                    included_author_id = included["author_id"]
+                    included_pub_metrics = included["public_metrics"]
 
-                included_likes = included_pub_metrics["like_count"]
-                included_reply_count = included_pub_metrics["reply_count"]
-                included_retweets = included_pub_metrics["retweet_count"]
-                included_quote_count = included_pub_metrics["quote_count"]
-                included_impressions = included_pub_metrics["impression_count"]
+                    included_likes = included_pub_metrics["like_count"]
+                    included_reply_count = included_pub_metrics["reply_count"]
+                    included_retweets = included_pub_metrics["retweet_count"]
+                    included_quote_count = included_pub_metrics["quote_count"]
+                    included_impressions = included_pub_metrics["impression_count"]
 
-                print("\nIncluded Tweet ID: ", included_id)
-                print("\nIncluded Tweet Author ID: ", included_author_id)
-                print("\nIncluded Tweet Public Metrics: ", included_pub_metrics)
+                    print("\nIncluded Tweet ID: ", included_id)
+                    print("\nIncluded Tweet Author ID: ", included_author_id)
+                    print("\nIncluded Tweet Public Metrics: ",
+                          included_pub_metrics)
 
-                print("\nIncluded Tweet Likes: ", included_likes)
-                print("\nIncluded Tweet Reply Count: ", included_reply_count)
-                print("\nIncluded Tweet Retweets: ", included_retweets)
-                print("\nIncluded Tweet Quote Count: ", included_quote_count)
-                print("\nIncluded Tweet Impressions: ", included_impressions)
+                    print("\nIncluded Tweet Likes: ", included_likes)
+                    print("\nIncluded Tweet Reply Count: ", included_reply_count)
+                    print("\nIncluded Tweet Retweets: ", included_retweets)
+                    print("\nIncluded Tweet Quote Count: ", included_quote_count)
+                    print("\nIncluded Tweet Impressions: ", included_impressions)
 
-            for iter in range(len(included_users)):
-                included1 = included_users[iter]
-                included1_id = included1["id"]
-                print("\nTweet's Included UserID #", iter, ": ",  included1_id)
+                for iter in range(len(included_users)):
+                    included1 = included_users[iter]
+                    included1_id = included1["id"]
+                    print("\nTweet's Included UserID #",
+                          iter, ": ",  included1_id)
 
 
 def main():
     rules = get_rules()
     delete = delete_all_rules(rules)
     set = set_rules(delete, update_flag)
-    get_stream(set, update_flag, remove_flag)
+    get_stream(update_flag, remove_flag)
 
 
 if __name__ == "__main__":
