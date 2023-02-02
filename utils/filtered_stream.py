@@ -236,13 +236,17 @@ def get_stream(update_flag, remove_flag):
             #     tweet_data, indent=4, sort_keys=True))
             # print("\nPublic Metrics: ", tweet_data["data"]["public_metrics"])
 
-            author_id = tweet_data["data"]["author_id"]
-            author = get_username_by_author_id(tweet_data["data"]["author_id"])
-            author_username = author["data"]["username"]
-            author_name = author["data"]["name"]
-            print("\nAuthor ID: ", author_id)
-            print("\nAuthor Name: ", author_name)
-            print("\nAuthor Username: ", author_username)
+            if "author_id" in tweet_data["data"]:
+                author_id = tweet_data["data"]["author_id"]
+                author = get_username_by_author_id(
+                    tweet_data["data"]["author_id"])
+                author_username = author["data"]["username"]
+                author_name = author["data"]["name"]
+                print("\nAuthor ID: ", author_id)
+                print("\nAuthor Name: ", author_name)
+                print("\nAuthor Username: ", author_username)
+            else:
+                print("Author ID not found")
 
             # improve wait/sleep to make sure rules GET call has returned json respones
             # once this is done, remove the nested if checks
@@ -285,28 +289,28 @@ def get_stream(update_flag, remove_flag):
                     print("\nIncluded/Parent Tweet Author ID: ",
                           included_author_id)
 
-                    try:
-                        inclued_name = get_username_by_author_id(
-                            included_author_id)
-                        included_author_name = inclued_name["data"]["name"]
-                        included_author_username = inclued_name["data"]["username"]
-                        print("\nIncluded/Parent Tweet Author Name: ",
-                              included_author_name)
-                        print("\nIncluded/Parent Tweet Author Username: ",
-                              included_author_username)
-                    except:
-                        print("ERROR ON GET USERNAME BY AUTHOR ID")
+                    # try:
+                    #     inclued_name = get_username_by_author_id(
+                    #         included_author_id)
+                    #     included_author_name = inclued_name["data"]["name"]
+                    #     included_author_username = inclued_name["data"]["username"]
+                    #     print("\nIncluded/Parent Tweet Author Name: ",
+                    #           included_author_name)
+                    #     print("\nIncluded/Parent Tweet Author Username: ",
+                    #           included_author_username)
+                    # except:
+                    #     print("ERROR ON GET USERNAME BY AUTHOR ID")
 
                     if included_author_id == author_id:
                         print(
                             "AUTHOR OF INCLUDED/PARENT TWEET MATCHES ORIGINAL AUTHOR")
-                        try:
-                            included_author_name = get_username_by_author_id(
-                                included_author_name)
-                            print("\nMatching Tweet Author Name: ",
-                                  included_author_name)
-                        except:
-                            print("ERROR ON GET USERNAME BY AUTHOR ID")
+                        # try:
+                        #     included_author_name = get_username_by_author_id(
+                        #         included_author_name)
+                        #     print("\nMatching Tweet Author Name: ",
+                        #           included_author_name)
+                        # except:
+                        #     print("ERROR ON GET USERNAME BY AUTHOR ID")
 
                     # comment becuase we are printing the members below
                     # print("\nIncluded Tweet Public Metrics: ",
