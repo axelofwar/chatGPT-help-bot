@@ -322,8 +322,10 @@ def get_stream(update_flag, remove_flag):
                 for iter in range(len(included_users)):
                     included1 = included_users[iter]
                     included1_id = included1["id"]
-                    print("\nMentioned ID #: ", iter, " ", included1_id)
+                    # uncomment this and parse each author id if we want to give points to each mentioned user
+                    # print("\nMentioned ID #: ", iter, " ", included1_id)
 
+                    # use this if we only want to track the original author and the engager
                     # compare mentioned/included parent user id to original author id
                     if included1_id == author_id:
                         print("\nTweet's Mentioned UserID: ", included1_id,
