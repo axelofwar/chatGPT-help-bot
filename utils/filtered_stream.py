@@ -222,7 +222,7 @@ def get_stream(update_flag, remove_flag):
             matching_rules = json_response["matching_rules"]
             full_text = json_response["data"]["text"]
             print("\nMATCHING RULES: ", matching_rules)
-            print("\nFULL TEXT: ", full_text)
+            print("\nTEXT: ", full_text)
 
             # TODO: if original tweet or quoted/retweeted
             # aggregate (x/y)*engagement to original author
@@ -320,29 +320,30 @@ def get_stream(update_flag, remove_flag):
                           included_impressions)
 
                 for iter in range(len(included_users)):
-                    included1 = included_users[iter]
-                    included1_id = included1["id"]
+                    engager_user = included_users[iter]
+                    engager_id = engager_user["id"]
                     # uncomment this and parse each author id if we want to give points to each mentioned user
-                    # print("\nMentioned ID #: ", iter, " ", included1_id)
+                    # print("\nMentioned ID #: ", iter, " ", engager_user_id)
 
                     # use this if we only want to track the original author and the engager
                     # compare mentioned/included parent user id to original author id
-                    if included1_id == author_id:
-                        print("\nTweet's Mentioned UserID: ", included1_id,
+                    if engager_id == author_id:
+                        print("\nTweet's Mentioned UserID: ", engager_id,
                               "matches original author ID: ", author_id)
-                        name = included1["name"]
-                        username = included1["username"]
+                        name = engager_user["name"]
+                        username = engager_user["username"]
                         print("\nMatching Mentioned Author Name: ", name)
                         print(
                             "\nMatching Mentioned Author Username: ", username)
-                    if included1_id == included_author_id:
-                        print("\nTweet's Mentioned UserID: ", included1_id,
+                    if engager_id == included_author_id:
+                        print("\nTweet's Mentioned UserID: ", engager_id,
                               "matches included/parent author ID: ", included_author_id)
-                        name = included1["name"]
-                        username = included1["username"]
-                        print("\nMatching Included/Parent Author Name: ", name)
+                        engager_name = engager_user["name"]
+                        engager_username = engager_user["username"]
+                        print("\nMatching Included/Parent Author Name: ",
+                              engager_name)
                         print(
-                            "\nMatching Included/Parent Author Username: ", username)
+                            "\nMatching Included/Parent Author Username: ", engager_username)
 
                 # TODO: add logic to compare metrics for author and included/parent author
                 # aggregate stats for participating author + stats for included/parent author
