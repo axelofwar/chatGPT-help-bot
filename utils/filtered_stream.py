@@ -59,7 +59,7 @@ def delete_all_rules(rules):
 
 
 def set_rules(delete, update_flag):
-    # You can adjust the rules if needed
+    # add more error handling for real-time rule adjustment gaps
     with open("utils/yamls/rules.yml", "r") as file:
         axel_rules = yaml.load(file, Loader=yaml.FullLoader)
 
@@ -119,8 +119,7 @@ def update_rules():
         delete = delete_all_rules(get_rules())
 
         set_rules(delete, update_flag)
-        # update_flag = False
-
+        update_flag = False
     with open("utils/yamls/config.yml", "w") as file:
         config["ADD_RULE"] = ""
         yaml.dump(config, file)
@@ -187,7 +186,7 @@ def get_username_by_author_id(author_id):
             "Cannot get user data (HTTP {}): {}".format(
                 response.status_code, response.text)
         )
-    return response.json()  # ["username"]
+    return response.json()
 
 
 def get_stream(update_flag, remove_flag):
@@ -203,7 +202,7 @@ def get_stream(update_flag, remove_flag):
         )
     for response_line in response.iter_lines():
         if response_line:
-            print("\nGOT RESPONSE!")
+            print("\n\nGOT RESPONSE!")
             if update_flag:
                 print("UPDATING RULES")
                 update_rules()
@@ -214,8 +213,11 @@ def get_stream(update_flag, remove_flag):
                 remove_flag = False
 
             json_response = json.loads(response_line)
+
+            # print raw data dump
             # print(json.dumps(json_response, indent=4, sort_keys=True))
             # data_response = json_response["data"]["text"]
+
             id = json_response["data"]["id"]
             matching_rules = json_response["matching_rules"]
             full_text = json_response["data"]["text"]
@@ -232,25 +234,32 @@ def get_stream(update_flag, remove_flag):
             # print raw data dump
             # print("\nDATA BY ID: ", json.dumps(
             #     tweet_data, indent=4, sort_keys=True))
+            # print("\nPublic Metrics: ", tweet_data["data"]["public_metrics"])
 
-            print("\nAuthor ID: ", tweet_data["data"]["author_id"])
+            author_id = tweet_data["data"]["author_id"]
             author = get_username_by_author_id(tweet_data["data"]["author_id"])
-            print("\nAuthor: ", author)
-            print("\nPublic Metrics: ", tweet_data["data"]["public_metrics"])
+            author_username = author["data"]["username"]
+            author_name = author["data"]["name"]
+            print("\nAuthor ID: ", author_id)
+            print("\nAuthor Name: ", author_name)
+            print("\nAuthor Username: ", author_username)
 
-            # if tweet_data["data"]["referenced_tweets"]:
+            # improve wait/sleep to make sure rules GET call has returned json respones
+            # once this is done, remove the nested if checks
+
             if "referenced_tweets" in tweet_data["data"]:
-                # if tweet_data["data"]["referenced_tweets"]:
-                referenced = tweet_data["data"]["referenced_tweets"]
+                if tweet_data["data"]["referenced_tweets"]:
+                    referenced = tweet_data["data"]["referenced_tweets"]
                 print("\nReferenced Tweets: ", referenced)
-            # if tweet_data["includes"]["tweets"]:
+
             if "tweets" in tweet_data["includes"]:
-                included_tweets = tweet_data["includes"]["tweets"]
-                included_users = tweet_data["includes"]["users"]
+                if tweet_data["includes"]["tweets"]:
+                    included_tweets = tweet_data["includes"]["tweets"]
+                    included_users = tweet_data["includes"]["users"]
 
             engagement_metrics = get_likes_retweets_impressions(id)
-            print("\nFavorites: ", engagement_metrics["favorite_count"])
-            print("\nRetweets: ", engagement_metrics["retweet_count"])
+            print("\nTweet Favorites: ", engagement_metrics["favorite_count"])
+            print("\nTweet Retweets: ", engagement_metrics["retweet_count"])
 
             # print raw data dump
             # print("\nIncludes: ", json.dumps(
@@ -273,21 +282,69 @@ def get_stream(update_flag, remove_flag):
                     included_impressions = included_pub_metrics["impression_count"]
 
                     print("\nIncluded Tweet ID: ", included_id)
-                    print("\nIncluded Tweet Author ID: ", included_author_id)
-                    print("\nIncluded Tweet Public Metrics: ",
-                          included_pub_metrics)
+                    print("\nIncluded/Parent Tweet Author ID: ",
+                          included_author_id)
 
-                    print("\nIncluded Tweet Likes: ", included_likes)
-                    print("\nIncluded Tweet Reply Count: ", included_reply_count)
-                    print("\nIncluded Tweet Retweets: ", included_retweets)
-                    print("\nIncluded Tweet Quote Count: ", included_quote_count)
-                    print("\nIncluded Tweet Impressions: ", included_impressions)
+                    try:
+                        inclued_name = get_username_by_author_id(
+                            included_author_id)
+                        included_author_name = inclued_name["data"]["name"]
+                        included_author_username = inclued_name["data"]["username"]
+                        print("\nIncluded/Parent Tweet Author Name: ",
+                              included_author_name)
+                        print("\nIncluded/Parent Tweet Author Username: ",
+                              included_author_username)
+                    except:
+                        print("ERROR ON GET USERNAME BY AUTHOR ID")
+
+                    if included_author_id == author_id:
+                        print(
+                            "AUTHOR OF INCLUDED/PARENT TWEET MATCHES ORIGINAL AUTHOR")
+                        try:
+                            included_author_name = get_username_by_author_id(
+                                included_author_name)
+                            print("\nMatching Tweet Author Name: ",
+                                  included_author_name)
+                        except:
+                            print("ERROR ON GET USERNAME BY AUTHOR ID")
+
+                    # comment becuase we are printing the members below
+                    # print("\nIncluded Tweet Public Metrics: ",
+                    #       included_pub_metrics)
+
+                    print("\nIncluded/Parent Likes: ", included_likes)
+                    print("\nIncluded/Parent Replies: ", included_reply_count)
+                    print("\nIncluded/Parent Retweets: ", included_retweets)
+                    print("\nIncluded/Parent Quotes: ", included_quote_count)
+                    print("\nIncluded/Parent Impressions: ",
+                          included_impressions)
 
                 for iter in range(len(included_users)):
                     included1 = included_users[iter]
                     included1_id = included1["id"]
-                    print("\nTweet's Included UserID #",
-                          iter, ": ",  included1_id)
+                    print("\nMentioned ID #: ", iter, " ", included1_id)
+
+                    # compare mentioned/included parent user id to original author id
+                    if included1_id == author_id:
+                        print("\nTweet's Mentioned UserID: ", included1_id,
+                              "matches original author ID: ", author_id)
+                        name = included1["name"]
+                        username = included1["username"]
+                        print("\nMatching Mentioned Author Name: ", name)
+                        print(
+                            "\nMatching Mentioned Author Username: ", username)
+                    if included1_id == included_author_id:
+                        print("\nTweet's Mentioned UserID: ", included1_id,
+                              "matches included/parent author ID: ", included_author_id)
+                        name = included1["name"]
+                        username = included1["username"]
+                        print("\nMatching Included/Parent Author Name: ", name)
+                        print(
+                            "\nMatching Included/Parent Author Username: ", username)
+
+                # TODO: add logic to compare metrics for author and included/parent author
+                # aggregate stats for participating author + stats for included/parent author
+                # compare to current dataabase and push changes? or overwrite?
 
 
 def main():
