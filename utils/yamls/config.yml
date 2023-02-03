@@ -1,7 +1,7 @@
 ADD_RULE: ''
 ADD_TAG: config-rule
 OPENAI_ENDPOINT: https://api.openai.com/v1
-RECONNECT_COUNT: 0
+RECONNECT_COUNT: 1
 REMOVE_RULE: ''
 UI_CHANNEL_ID: '943008506397749258'
 account_to_query: axelofwar

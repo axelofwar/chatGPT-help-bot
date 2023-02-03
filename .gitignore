@@ -16,3 +16,7 @@ build/
 .DS_STORE
 
 .env
+
+outputs
+outputs/df.csv
+outputs/df.json
