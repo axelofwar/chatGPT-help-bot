@@ -236,30 +236,39 @@ def get_stream(update_flag, remove_flag):
             #     tweet_data, indent=4, sort_keys=True))
             # print("\nPublic Metrics: ", tweet_data["data"]["public_metrics"])
 
-            if "author_id" in tweet_data["data"]:
-                author_id = tweet_data["data"]["author_id"]
-                author = get_username_by_author_id(
-                    tweet_data["data"]["author_id"])
-                author_username = author["data"]["username"]
-                author_name = author["data"]["name"]
-                print("\nAuthor ID: ", author_id)
-                print("\nAuthor Name: ", author_name)
-                print("\nAuthor Username: ", author_username)
-            else:
-                print("Author ID not found")
-
             # improve wait/sleep to make sure rules GET call has returned json respones
-            # once this is done, remove the nested if checks
+            # once this is done, remove the nested if and try checks
+            try:
+                if tweet_data["data"]["author_id"]:
+                    if "author_id" in tweet_data["data"]:
+                        author_id = tweet_data["data"]["author_id"]
+                        author = get_username_by_author_id(
+                            tweet_data["data"]["author_id"])
+                        author_username = author["data"]["username"]
+                        author_name = author["data"]["name"]
+                        print("\nAuthor ID: ", author_id)
+                        print("\nAuthor Name: ", author_name)
+                        print("\nAuthor Username: ", author_username)
+                    else:
+                        print("Author ID not found")
 
-            if "referenced_tweets" in tweet_data["data"]:
-                if tweet_data["data"]["referenced_tweets"]:
-                    referenced = tweet_data["data"]["referenced_tweets"]
-                print("\nReferenced Tweets: ", referenced)
+                if "referenced_tweets" in tweet_data["data"]:
+                    if tweet_data["data"]["referenced_tweets"]:
+                        referenced = tweet_data["data"]["referenced_tweets"]
+                    print("\nReferenced Tweets: ", referenced)
 
-            if "tweets" in tweet_data["includes"]:
-                if tweet_data["includes"]["tweets"]:
-                    included_tweets = tweet_data["includes"]["tweets"]
-                    included_users = tweet_data["includes"]["users"]
+                if "tweets" in tweet_data["includes"]:
+                    if tweet_data["includes"]["tweets"]:
+                        included_tweets = tweet_data["includes"]["tweets"]
+                        included_users = tweet_data["includes"]["users"]
+
+            except KeyError as ke:
+                print("KeyError occured: ", ke)
+                with open("utils/config.yml", "w") as file:
+                    config["RECONNECT_COUNT"] += 1
+                    yaml.dump(config, file)
+                print("Restarting stream...")
+                get_stream(update_flag, remove_flag)
 
             engagement_metrics = get_likes_retweets_impressions(id)
             print("\nTweet Favorites: ", engagement_metrics["favorite_count"])
