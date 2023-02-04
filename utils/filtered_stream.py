@@ -1,18 +1,23 @@
-import requests
-import os
 import json
+import os
+import pandas as pd
+import requests
 from dotenv import load_dotenv
+import time
 import yaml
+import csv
 load_dotenv()
 
 bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
 update_flag = False
 remove_flag = False
+df = pd.DataFrame()
 
 
 with open("utils/yamls/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 # To set your enviornment variables in your terminal run the following line:
+    config["RECONNECT_COUNT"] = 0
 
 
 def bearer_oauth(r):
@@ -82,7 +87,7 @@ def set_rules(delete, update_flag):
     if response.status_code != 200:
         delete_all_rules(rules)
         print("Reconnecting to the stream...")
-        with open("utils/config.yml", "w") as file:
+        with open("utils/yamls/config.yml", "w") as file:
             config["RECONNECT_COUNT"] += 1
             yaml.dump(config, file)
 
@@ -97,6 +102,13 @@ def set_rules(delete, update_flag):
             "Cannot add rules (HTTP {}): {}".format(
                 response.status_code, response.text)
         )
+    # if response.status_code != 200:
+    #     print("Reconnecting to the stream...")
+    #     with open("utils/config.yml", "w") as file:
+    #         config["RECONNECT_COUNT"] += 1
+    #         yaml.dump(config, file)
+    #     set_rules(delete_all_rules(get_rules()), update_flag)
+
     print(json.dumps(response.json()))
 
 
@@ -193,13 +205,27 @@ def get_stream(update_flag, remove_flag):
     response = requests.get(
         "https://api.twitter.com/2/tweets/search/stream", auth=bearer_oauth, stream=True,
     )
+
     print(response.status_code)
+
+    if response.status_code == 429:
+        print("TOO MANY REQUESTS")
+        time.sleep(60)
+        get_stream(update_flag, remove_flag)
+
     if response.status_code != 200:
-        raise Exception(
-            "Cannot get stream (HTTP {}): {}".format(
-                response.status_code, response.text
+        try:
+            print("Reconnecting to the stream...")
+            with open("utils/yamls/config.yml", "w") as file:
+                config["RECONNECT_COUNT"] += 1
+                yaml.dump(config, file)
+            set_rules(delete_all_rules(get_rules()), update_flag)
+        except:
+            raise Exception(
+                "Cannot get stream (HTTP {}): {}".format(
+                    response.status_code, response.text
+                )
             )
-        )
     for response_line in response.iter_lines():
         if response_line:
             print("\n\nGOT RESPONSE!")
@@ -261,24 +287,66 @@ def get_stream(update_flag, remove_flag):
                     if tweet_data["includes"]["tweets"]:
                         included_tweets = tweet_data["includes"]["tweets"]
                         included_users = tweet_data["includes"]["users"]
+                    else:
+                        included_tweets = None
+                        included_users = None
 
             except KeyError as ke:
                 print("KeyError occured: ", ke)
-                with open("utils/config.yml", "w") as file:
+                with open("utils/yamls/config.yml", "w") as file:
                     config["RECONNECT_COUNT"] += 1
                     yaml.dump(config, file)
                 print("Restarting stream...")
                 get_stream(update_flag, remove_flag)
 
             engagement_metrics = get_likes_retweets_impressions(id)
-            print("\nTweet Favorites: ", engagement_metrics["favorite_count"])
-            print("\nTweet Retweets: ", engagement_metrics["retweet_count"])
+            tweet_favorite_count = int(engagement_metrics["favorite_count"])
+            tweet_retweet_count = int(engagement_metrics["retweet_count"])
+            print("\nTweet Favorites: ", tweet_favorite_count)
+            print("\nTweet Retweets: ", tweet_retweet_count)
 
-            # print raw data dump
-            # print("\nIncludes: ", json.dumps(
-            #     included_tweets, indent=4, sort_keys=True))
-            # print("\nIncludes Users: ", json.dumps(
-            #     included_users, indent=4, sort_keys=True))
+            try:
+                outputs_df = pd.read_csv("outputs/df.csv", index_col=0)
+                if author_username not in outputs_df.index:
+                    authors_index = [author_username]
+                    df1 = pd.DataFrame(index=authors_index, data=int(
+                        tweet_favorite_count), columns=["Favorites"])
+                    df2 = pd.DataFrame(index=authors_index, data=int(
+                        tweet_retweet_count), columns=["Retweets"])
+                    df3 = pd.DataFrame(index=authors_index,
+                                       data=id, columns=["Tweet ID"])
+                    df = pd.concat([df1, df2, df3], axis=1)
+                    outputs_df = outputs_df.append(df)
+                else:
+                    outputs_df.loc[author_username, "Favorites"] = int(
+                        tweet_favorite_count)
+                    outputs_df.loc[author_username, "Retweets"] = int(
+                        tweet_retweet_count)
+                    outputs_df.loc["Tweet ID"] = int(id)
+            except FileNotFoundError:
+                authors_index = [author_username]
+                df1 = pd.DataFrame(index=authors_index, data=int(
+                    tweet_favorite_count), columns=["Favorites"])
+                df2 = pd.DataFrame(index=authors_index, data=int(
+                    tweet_retweet_count), columns=["Retweets"])
+                df3 = pd.DataFrame(index=authors_index,
+                                   data=id, columns=["Tweet ID"])
+                df = pd.concat([df1, df2, df3], axis=1)
+                outputs_df = df
+            except pd.errors.EmptyDataError:
+                authors_index = [author_username]
+                df1 = pd.DataFrame(index=authors_index, data=int(
+                    tweet_favorite_count), columns=["Favorites"])
+                df2 = pd.DataFrame(index=authors_index, data=int(
+                    tweet_retweet_count), columns=["Retweets"])
+                df3 = pd.DataFrame(index=authors_index,
+                                   data=int(id), columns=["Tweet ID"])
+                df = pd.concat([df1, df2, df3], axis=1)
+                outputs_df = df
+
+            # ,
+            # outputs_df.to_csv("outputs/df.csv", sep="\t")
+            #   quoting=csv.QUOTE_NONNUMERIC, index=False)
 
             if tweet_data["includes"]:
                 # loop to go through all referenced/included tweets
@@ -294,32 +362,53 @@ def get_stream(update_flag, remove_flag):
                     included_quote_count = included_pub_metrics["quote_count"]
                     included_impressions = included_pub_metrics["impression_count"]
 
-                    print("\nIncluded Tweet ID: ", included_id)
-                    print("\nIncluded/Parent Tweet Author ID: ",
-                          included_author_id)
-
-                    # try:
-                    #     inclued_name = get_username_by_author_id(
-                    #         included_author_id)
-                    #     included_author_name = inclued_name["data"]["name"]
-                    #     included_author_username = inclued_name["data"]["username"]
-                    #     print("\nIncluded/Parent Tweet Author Name: ",
-                    #           included_author_name)
-                    #     print("\nIncluded/Parent Tweet Author Username: ",
-                    #           included_author_username)
-                    # except:
-                    #     print("ERROR ON GET USERNAME BY AUTHOR ID")
+                    # print("\nIncluded Tweet ID: ", included_id)
+                    # print("\nIncluded/Parent Tweet Author ID: ",
+                    #       included_author_id)
 
                     if included_author_id == author_id:
-                        print(
-                            "AUTHOR OF INCLUDED/PARENT TWEET MATCHES ORIGINAL AUTHOR")
-                        # try:
-                        #     included_author_name = get_username_by_author_id(
-                        #         included_author_name)
-                        #     print("\nMatching Tweet Author Name: ",
-                        #           included_author_name)
-                        # except:
-                        #     print("ERROR ON GET USERNAME BY AUTHOR ID")
+                        included_author_username = author_username
+                        outputs_df = pd.read_csv(
+                            "outputs/df.csv", index_col=0)
+                        if included_author_username in outputs_df.index:
+                            outputs_df.loc[included_author_username,
+                                           "Favorites"] = int(included_likes)
+                            outputs_df.loc[included_author_username,
+                                           "Retweets"] = int(included_retweets)
+                            outputs_df.loc["Tweet ID"] = int(included_id)
+                            outputs_df.to_csv("outputs/df.csv", sep="\t")
+
+                    else:
+                        try:
+                            inclued_name = get_username_by_author_id(
+                                included_author_id)
+                            included_author_username = inclued_name["data"]["username"]
+                            outputs_df = pd.read_csv(
+                                "outputs/df.csv", index_col=0)
+
+                            if included_author_username in outputs_df.index:
+                                outputs_df.loc[included_author_username,
+                                               "Favorites"] = int(included_likes)
+                                outputs_df.loc[included_author_username,
+                                               "Retweets"] = int(included_retweets)
+                                outputs_df.loc["Tweet ID"] = int(included_id)
+                            else:
+                                included_author_username = author_username
+                                authors_index = [included_author_username]
+                                df1 = pd.DataFrame(
+                                    index=authors_index, data=int(tweet_favorite_count), columns=["Favorites"])
+                                df2 = pd.DataFrame(
+                                    index=authors_index, data=int(tweet_retweet_count), columns=["Retweets"])
+                                df3 = pd.DataFrame(
+                                    index=authors_index, data=id, columns=["Tweet ID"])
+                                df = pd.concat([df1, df2, df3], axis=1)
+                            outputs_df = outputs_df.append(df)
+                        except:
+                            print("ERROR ON GET USERNAME BY AUTHOR ID")
+                        # outputs_df.to_csv("outputs/df.csv", sep="\t")s
+
+                    print("AUTHOR OF INCLUDED/PARENT TWEET DIFFERENT FROM AUTHOR")
+                    outputs_df.to_csv("outputs/df.csv", sep="\t")
 
                     # comment becuase we are printing the members below
                     # print("\nIncluded Tweet Public Metrics: ",
@@ -348,6 +437,7 @@ def get_stream(update_flag, remove_flag):
                         print("\nMatching Mentioned Author Name: ", name)
                         print(
                             "\nMatching Mentioned Author Username: ", username)
+
                     if engager_id == included_author_id:
                         print("\nTweet's Mentioned UserID: ", engager_id,
                               "matches included/parent author ID: ", included_author_id)
