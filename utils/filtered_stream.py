@@ -102,13 +102,6 @@ def set_rules(delete, update_flag):
             "Cannot add rules (HTTP {}): {}".format(
                 response.status_code, response.text)
         )
-    # if response.status_code != 200:
-    #     print("Reconnecting to the stream...")
-    #     with open("utils/config.yml", "w") as file:
-    #         config["RECONNECT_COUNT"] += 1
-    #         yaml.dump(config, file)
-    #     set_rules(delete_all_rules(get_rules()), update_flag)
-
     print(json.dumps(response.json()))
 
 
@@ -309,6 +302,7 @@ def get_stream(update_flag, remove_flag):
                 outputs_df = pd.read_csv(
                     "outputs/df.csv", index_col=0, on_bad_lines="skip")
                 outputs_json = pd.read_json("outputs/df.json")
+                # improve this if handling to actually catch when the author is not in the df
                 if author_username not in outputs_df.index:
                     authors_index = [author_username]
                     df0 = pd.DataFrame(
@@ -320,6 +314,10 @@ def get_stream(update_flag, remove_flag):
                     df3 = pd.DataFrame(index=authors_index,
                                        data=id, columns=["Tweet ID"])
                     df = pd.concat([df0, df1, df2, df3], axis=1)
+
+                    author = df['Author']
+                    print("\nauthor_username not in outputs_df.index: ", author)
+
                     outputs_df = outputs_df.append(df)
                     outputs_json = outputs_json.append(df)
                 else:
@@ -330,11 +328,15 @@ def get_stream(update_flag, remove_flag):
                         tweet_retweet_count)
                     outputs_df.loc["Tweet ID"] = id
 
-                # Test reading from json
-                # if I can get this working better than .csv I will use this instead
-                author_dict = outputs_json['Author'].to_dict()
-                author_json = list(author_dict.values())[0]
-                print("\nAUTHOR JSON: ", author_json)
+                    author = df['Author']
+                    print("\nauthor_username found in outputs_df.index: ", author)
+
+                # READ FROM JSON TESTS
+                # TODOO: if I can get this working better than .csv I will use this instead
+
+                # author_dict = outputs_json['Author'].to_dict()
+                # author_json = list(author_dict.values())[0]
+                # print("\nAUTHOR JSON: ", author_json)
 
                 # outputs_json = outputs_df.to_json(
                 #     "outputs/df.json", orient="records")
@@ -343,7 +345,6 @@ def get_stream(update_flag, remove_flag):
                 #     if key == author_username:
                 #         author_json = value
                 #         break
-
                 #    print("\nAUTHOR JSON: ", author_json)
 
             except FileNotFoundError:
@@ -358,6 +359,7 @@ def get_stream(update_flag, remove_flag):
                                    data=id, columns=["Tweet ID"])
                 df = pd.concat([df0, df1, df2, df3], axis=1)
                 outputs_df = df
+
             except pd.errors.EmptyDataError:
                 authors_index = [author_username]
                 df0 = pd.DataFrame(
@@ -427,6 +429,10 @@ def get_stream(update_flag, remove_flag):
                                                "Retweets"] = int(included_retweets)
                                 outputs_df.loc["Tweet ID"] = included_id
                                 # outputs_df.to_csv("outputs/df.csv", sep="\t")
+
+                                author = df['Author']
+                                print(
+                                    "\nincluded_author_username found in outputs_df.index: ", author)
                             else:
                                 included_author_username = author_username
                                 authors_index = [included_author_username]
@@ -444,7 +450,7 @@ def get_stream(update_flag, remove_flag):
                             print("ERROR ON GET USERNAME BY AUTHOR ID")
                         # outputs_df.to_csv("outputs/df.csv", sep="\t")s
 
-                    print("AUTHOR OF INCLUDED/PARENT TWEET DIFFERENT FROM AUTHOR")
+                    print("\nAUTHOR OF INCLUDED/PARENT TWEET DIFFERENT FROM AUTHOR")
                     outputs_df.to_csv("outputs/df.csv", sep="\t")
 
                     # comment becuase we are printing the members below
@@ -486,6 +492,10 @@ def get_stream(update_flag, remove_flag):
                                 outputs_df.loc[engager_author_username,
                                                "Retweets"] = int(included_retweets)
                                 outputs_df.loc["Tweet ID"] = included_id
+
+                                author = df['Author']
+                                print(
+                                    "\nengager_author_username found in outputs_df.index: ", author)
                             except:
                                 authors_index = [engager_author_username]
                                 df0 = pd.DataFrame(
@@ -510,6 +520,7 @@ def get_stream(update_flag, remove_flag):
                         engager_author_username = included_author_username
                         outputs_df = pd.read_csv(
                             "outputs/df.csv", index_col=0, on_bad_lines="skip")
+
                         if engager_author_username in outputs_df.index:
                             try:
                                 outputs_df.loc[engager_author_username,
@@ -519,7 +530,10 @@ def get_stream(update_flag, remove_flag):
                                 outputs_df.loc[engager_author_username,
                                                "Retweets"] = int(included_retweets)
                                 outputs_df.loc[engager_author_username]["Tweet ID"] = included_id
-                                # print("Double call worked: ", s)
+
+                                author = df['Author']
+                                print(
+                                    "\nincluded_engager_username found in outputs_df.index: ", author)
                             except:
                                 authors_index = [engager_author_username]
                                 df0 = pd.DataFrame(
@@ -531,7 +545,12 @@ def get_stream(update_flag, remove_flag):
                                 df3 = pd.DataFrame(
                                     index=authors_index, data=included_id, columns=["Tweet ID"])
                                 df = pd.concat([df1, df2, df3], axis=1)
+
                 outputs_df.to_csv("outputs/df.csv", sep="\t")
+                outputs_json.to_json("outputs/df.json", orient="index")
+
+                # print("Outputs_df Author: ",
+                #       outputs_df.loc["sora_joey", "Author"])
 
                 # TODO: add logic to compare metrics for author and included/parent author
                 # aggregate stats for participating author + stats for included/parent author

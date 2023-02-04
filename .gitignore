@@ -17,4 +17,6 @@ build/
 
 .env
 
+outputs
 outputs/df.csv
+outputs/df.json
