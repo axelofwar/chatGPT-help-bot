@@ -152,9 +152,6 @@ def get_stream(update_flag, remove_flag):
                                        data=id, columns=["Tweet ID"])
                     df = pd.concat([df0, df1, df2, df3], axis=1)
 
-                    author = df['Author']
-                    print("\nauthor_username not in outputs_df.index: ", author)
-
                     outputs_df = outputs_df.append(df)
                     outputs_json = outputs_json.append(df)
                     export_df = df
@@ -239,6 +236,7 @@ def get_stream(update_flag, remove_flag):
                     if included_author_id == author_id:
                         included_author_username = author_username
                         included_user = st.get_username_by_author_id(
+
                             included_author_id)
                         included_author_name = included_user["data"]["name"]
                         outputs_df = pd.read_csv(
@@ -271,9 +269,6 @@ def get_stream(update_flag, remove_flag):
                                 outputs_df.loc["Tweet ID"] = included_id
                                 # outputs_df.to_csv("outputs/df.csv", sep="\t")
 
-                                author = df['Author']
-                                print(
-                                    "\nincluded_author_username found in outputs_df.index: ", author)
                             else:
                                 included_author_username = author_username
                                 authors_index = [included_author_username]
@@ -321,7 +316,8 @@ def get_stream(update_flag, remove_flag):
 
                         engager_author_username = author_username
                         outputs_df = pd.read_csv(
-                            "outputs/df.csv", index_col=0, on_bad_lines="skip")
+                            "outputs/df.csv", index_col=0)
+                            
                         if engager_author_username in outputs_df.index:
                             try:
                                 outputs_df.loc[engager_author_username,
@@ -332,9 +328,6 @@ def get_stream(update_flag, remove_flag):
                                                "Retweets"] = int(included_retweets)
                                 outputs_df.loc["Tweet ID"] = included_id
 
-                                author = df['Author']
-                                print(
-                                    "\nengager_author_username found in outputs_df.index: ", author)
                             except:
                                 authors_index = [engager_author_username]
                                 df0 = pd.DataFrame(
@@ -358,7 +351,8 @@ def get_stream(update_flag, remove_flag):
                         #     "\nMatching Included/Parent Author Username: ", engager_username)
                         engager_author_username = included_author_username
                         outputs_df = pd.read_csv(
-                            "outputs/df.csv", index_col=0, on_bad_lines="skip")
+
+                            "outputs/df.csv", index_col=0)
 
                         if engager_author_username in outputs_df.index:
                             try:
@@ -370,9 +364,8 @@ def get_stream(update_flag, remove_flag):
                                                "Retweets"] = int(included_retweets)
                                 outputs_df.loc[engager_author_username]["Tweet ID"] = included_id
 
-                                author = df['Author']
-                                print(
-                                    "\nincluded_engager_username found in outputs_df.index: ", author)
+                                # print("Double call worked: ", s)
+
                             except:
                                 authors_index = [engager_author_username]
                                 df0 = pd.DataFrame(
@@ -384,6 +377,12 @@ def get_stream(update_flag, remove_flag):
                                 df3 = pd.DataFrame(
                                     index=authors_index, data=included_id, columns=["Tweet ID"])
                                 df = pd.concat([df1, df2, df3], axis=1)
+
+                outputs_df.to_csv("outputs/df.csv", sep="\t")
+                nameString = 'Jimmy_Grow'
+                outputs_df = pd.read_csv(
+                    "outputs/df.csv", index_col=0)
+                # s = outputs_df.loc[nameString]
 
                 export_df = df  # FIX THIS EXPORT DF SO USABLE IN POSTGRES_TOOLS.PY
                 print("\nExport DF: ", export_df)
