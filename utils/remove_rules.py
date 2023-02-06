@@ -1,4 +1,4 @@
-import filtered_stream as fs
+import stream_tools as st
 import yaml
 
 with open("utils/yamls/rules.yml", "r") as file:
@@ -6,7 +6,7 @@ with open("utils/yamls/rules.yml", "r") as file:
 
 
 def main():
-    fs.remove_rules(axel_rules)
+    st.remove_rules(axel_rules)
     return
 
 
