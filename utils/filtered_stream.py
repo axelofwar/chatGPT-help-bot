@@ -12,6 +12,7 @@ load_dotenv()
 bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
 update_flag = False
 remove_flag = False
+author = ""
 df = pd.DataFrame()
 export_df = pd.DataFrame()
 
@@ -152,6 +153,7 @@ def get_stream(update_flag, remove_flag):
 
                     outputs_df = outputs_df.append(df)
                     outputs_json = outputs_json.append(df)
+                    export_df = df
                 else:
                     outputs_df.loc[author_username, "Author"] = author_name
                     outputs_df.loc[author_username, "Favorites"] = int(
@@ -161,6 +163,7 @@ def get_stream(update_flag, remove_flag):
                     outputs_df.loc["Tweet ID"] = id
 
                     author = df['Author']
+                    export_df = df
                     print("\nauthor_username found in outputs_df.index: ", author)
 
                 # READ FROM JSON TESTS
@@ -191,6 +194,7 @@ def get_stream(update_flag, remove_flag):
                                    data=id, columns=["Tweet ID"])
                 df = pd.concat([df0, df1, df2, df3], axis=1)
                 outputs_df = df
+                export_df = df
 
             except pd.errors.EmptyDataError:
                 authors_index = [author_username]
@@ -292,6 +296,7 @@ def get_stream(update_flag, remove_flag):
                     print("\nIncluded/Parent Quotes: ", included_quote_count)
                     print("\nIncluded/Parent Impressions: ",
                           included_impressions)
+                    export_df = df
 
                 for iter in range(len(included_users)):
                     engager_user = included_users[iter]
@@ -376,13 +381,10 @@ def get_stream(update_flag, remove_flag):
                                     index=authors_index, data=included_id, columns=["Tweet ID"])
                                 df = pd.concat([df1, df2, df3], axis=1)
 
+                export_df = df  # FIX THIS EXPORT DF SO USABLE IN POSTGRES_TOOLS.PY
+                print("\nExport DF: ", export_df)
                 outputs_df.to_csv("outputs/df.csv", sep="\t")
                 # outputs_json.to_json("outputs/df.json", orient="index")
-                export_df = df  # FIX THIS EXPORT DF SO USABLE IN POSTGRES_TOOLS.PY
-
-                # TODO: add logic to compare metrics for author and included/parent author
-                # aggregate stats for participating author + stats for included/parent author
-                # compare to current dataabase and push changes? or overwrite?
 
 
 def main():
