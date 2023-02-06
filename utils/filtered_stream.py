@@ -131,6 +131,10 @@ def get_stream(update_flag, remove_flag):
             print("\nTweet Favorites: ", tweet_favorite_count)
             print("\nTweet Retweets: ", tweet_retweet_count)
 
+            # TODO: remove .csv and .json outputs to local
+            # integrate data frames direct to postgress db
+            # create a new table for each new rule(?) allows by communtiy tracking
+
             try:
                 outputs_df = pd.read_csv(
                     "outputs/df.csv", index_col=0, on_bad_lines="skip")
