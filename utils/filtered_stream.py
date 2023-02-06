@@ -5,15 +5,22 @@ import requests
 from dotenv import load_dotenv
 import time
 import yaml
-import csv
 import stream_tools as st
+import postgres_tools as pg
+
 load_dotenv()
 
 bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
+engine = pg.start_db("test")
+table1 = "df_table"
+
+
 update_flag = False
 remove_flag = False
+author = ""
 df = pd.DataFrame()
 export_df = pd.DataFrame()
+export_include_df = pd.DataFrame()
 
 
 with open("utils/yamls/config.yml", "r") as file:
@@ -23,7 +30,7 @@ with open("utils/yamls/config.yml", "r") as file:
 
 
 def get_export_df():
-    return export_df
+    return export_include_df
 
 
 def get_stream(update_flag, remove_flag):
@@ -130,85 +137,23 @@ def get_stream(update_flag, remove_flag):
             print("\nTweet Favorites: ", tweet_favorite_count)
             print("\nTweet Retweets: ", tweet_retweet_count)
 
-            try:
-                outputs_df = pd.read_csv(
-                    "outputs/df.csv", index_col=0, on_bad_lines="skip")
-                outputs_json = pd.read_json("outputs/df.json")
-                # improve this if handling to actually catch when the author is not in the df
-                if author_username not in outputs_df.index:
-                    authors_index = [author_username]
-                    df0 = pd.DataFrame(
-                        index=authors_index, data=author_name, columns=["Author"])
-                    df1 = pd.DataFrame(index=authors_index, data=int(
-                        tweet_favorite_count), columns=["Favorites"])
-                    df2 = pd.DataFrame(index=authors_index, data=int(
-                        tweet_retweet_count), columns=["Retweets"])
-                    df3 = pd.DataFrame(index=authors_index,
-                                       data=id, columns=["Tweet ID"])
-                    df = pd.concat([df0, df1, df2, df3], axis=1)
+            # TODO: remove .csv and .json outputs to local
+            # integrate data frames direct to postgress db
+            # create a new table for each new rule(?) allows by communtiy tracking
 
-                    author = df['Author']
-                    print("\nauthor_username not in outputs_df.index: ", author)
+            authors_index = [author_username]
+            df0 = pd.DataFrame(
+                index=authors_index, data=author_name, columns=["Author"])
+            df1 = pd.DataFrame(index=authors_index, data=int(
+                tweet_favorite_count), columns=["Favorites"])
+            df2 = pd.DataFrame(index=authors_index, data=int(
+                tweet_retweet_count), columns=["Retweets"])
+            df3 = pd.DataFrame(index=authors_index,
+                               data=id, columns=["Tweet ID"])
+            df = pd.concat([df0, df1, df2, df3], axis=1)
 
-                    outputs_df = outputs_df.append(df)
-                    outputs_json = outputs_json.append(df)
-                else:
-                    outputs_df.loc[author_username, "Author"] = author_name
-                    outputs_df.loc[author_username, "Favorites"] = int(
-                        tweet_favorite_count)
-                    outputs_df.loc[author_username, "Retweets"] = int(
-                        tweet_retweet_count)
-                    outputs_df.loc["Tweet ID"] = id
-
-                    author = df['Author']
-                    print("\nauthor_username found in outputs_df.index: ", author)
-
-                # READ FROM JSON TESTS
-                # TODOO: if I can get this working better than .csv I will use this instead
-
-                # author_dict = outputs_json['Author'].to_dict()
-                # author_json = list(author_dict.values())[0]
-                # print("\nAUTHOR JSON: ", author_json)
-
-                # outputs_json = outputs_df.to_json(
-                #     "outputs/df.json", orient="records")
-                # author_dict = outputs_json.to_dict()
-                # for key, value in author_dict.items():
-                #     if key == author_username:
-                #         author_json = value
-                #         break
-                #    print("\nAUTHOR JSON: ", author_json)
-
-            except FileNotFoundError:
-                authors_index = [author_username]
-                df0 = pd.DataFrame(
-                    index=authors_index, data=author_name, columns=["Author"])
-                df1 = pd.DataFrame(index=authors_index, data=int(
-                    tweet_favorite_count), columns=["Favorites"])
-                df2 = pd.DataFrame(index=authors_index, data=int(
-                    tweet_retweet_count), columns=["Retweets"])
-                df3 = pd.DataFrame(index=authors_index,
-                                   data=id, columns=["Tweet ID"])
-                df = pd.concat([df0, df1, df2, df3], axis=1)
-                outputs_df = df
-
-            except pd.errors.EmptyDataError:
-                authors_index = [author_username]
-                df0 = pd.DataFrame(
-                    index=authors_index, data=author_name, columns=["Author"])
-                df1 = pd.DataFrame(index=authors_index, data=int(
-                    tweet_favorite_count), columns=["Favorites"])
-                df2 = pd.DataFrame(index=authors_index, data=int(
-                    tweet_retweet_count), columns=["Retweets"])
-                df3 = pd.DataFrame(index=authors_index,
-                                   data=id, columns=["Tweet ID"])
-                df = pd.concat([df0, df1, df2, df3], axis=1)
-                outputs_df = df
-                export_df = df
-
-            # ,
-            # outputs_df.to_csv("outputs/df.csv", sep="\t")
-            #   quoting=csv.QUOTE_NONNUMERIC, index=False)
+            export_df = df
+            print("\nExport_df:", export_df)
 
             if tweet_data["includes"]:
                 # loop to go through all referenced/included tweets
@@ -230,61 +175,38 @@ def get_stream(update_flag, remove_flag):
 
                     if included_author_id == author_id:
                         included_author_username = author_username
-                        included_user = st.get_username_by_author_id(
-                            included_author_id)
-                        included_author_name = included_user["data"]["name"]
-                        outputs_df = pd.read_csv(
-                            "outputs/df.csv", index_col=0)
-                        if included_author_username in outputs_df.index:
-                            outputs_df.loc[included_author_username,
-                                           "Author"] = included_author_name
-                            outputs_df.loc[included_author_username,
-                                           "Favorites"] = int(included_likes)
-                            outputs_df.loc[included_author_username,
-                                           "Retweets"] = int(included_retweets)
-                            outputs_df.loc["Tweet ID"] = included_id
-                            # outputs_df.to_csv("outputs/df.csv", sep="\t")
+                        # included_user = st.get_username_by_author_id(
+
+                        #     author_id)
+                        included_user = author
+                        # included_author_name = included_user["data"]["name"]
+                        included_author_name = author_name
 
                     else:
                         try:
-                            inclued_name = st.get_username_by_author_id(
+                            included_name = st.get_username_by_author_id(
                                 included_author_id)
-                            included_author_username = inclued_name["data"]["username"]
-                            outputs_df = pd.read_csv(
-                                "outputs/df.csv", index_col=0, on_bad_lines="skip")
+                            included_author_username = included_name["data"]["username"]
+                            included_author_name = included_name["data"]["name"]
 
-                            if included_author_username in outputs_df.index:
-                                outputs_df.loc[included_author_username,
-                                               "Author"] = included_author_name
-                                outputs_df.loc[included_author_username,
-                                               "Favorites"] = int(included_likes)
-                                outputs_df.loc[included_author_username,
-                                               "Retweets"] = int(included_retweets)
-                                outputs_df.loc["Tweet ID"] = included_id
-                                # outputs_df.to_csv("outputs/df.csv", sep="\t")
+                            included_author_username = author_username
+                            authors_index = [included_author_username]
+                            df0 = pd.DataFrame(
+                                index=authors_index, data=author_name, columns=["Author"])
+                            df1 = pd.DataFrame(
+                                index=authors_index, data=int(included_likes), columns=["Favorites"])
+                            df2 = pd.DataFrame(
+                                index=authors_index, data=int(included_retweets), columns=["Retweets"])
+                            df3 = pd.DataFrame(
+                                index=authors_index, data=int(included_reply_count), columns=["Replies"])
+                            df4 = pd.DataFrame(
+                                index=authors_index, data=included_id, columns=["Tweet ID"])
+                            df = pd.concat([df0, df1, df2, df3, df4], axis=1)
 
-                                author = df['Author']
-                                print(
-                                    "\nincluded_author_username found in outputs_df.index: ", author)
-                            else:
-                                included_author_username = author_username
-                                authors_index = [included_author_username]
-                                df0 = pd.DataFrame(
-                                    index=authors_index, data=author_name, columns=["Author"])
-                                df1 = pd.DataFrame(
-                                    index=authors_index, data=int(included_likes), columns=["Favorites"])
-                                df2 = pd.DataFrame(
-                                    index=authors_index, data=int(included_retweets), columns=["Retweets"])
-                                df3 = pd.DataFrame(
-                                    index=authors_index, data=included_id, columns=["Tweet ID"])
-                                df = pd.concat([df0, df1, df2, df3], axis=1)
-                            outputs_df = outputs_df.append(df)
-                            export_df = df
                         except:
                             print("ERROR ON GET USERNAME BY AUTHOR ID")
 
                     print("\nAUTHOR OF INCLUDED/PARENT TWEET DIFFERENT FROM AUTHOR")
-                    outputs_df.to_csv("outputs/df.csv", sep="\t")
 
                     print("\nIncluded/Parent Likes: ", included_likes)
                     print("\nIncluded/Parent Replies: ", included_reply_count)
@@ -292,6 +214,7 @@ def get_stream(update_flag, remove_flag):
                     print("\nIncluded/Parent Quotes: ", included_quote_count)
                     print("\nIncluded/Parent Impressions: ",
                           included_impressions)
+                    export_include_df = df
 
                 for iter in range(len(included_users)):
                     engager_user = included_users[iter]
@@ -311,32 +234,19 @@ def get_stream(update_flag, remove_flag):
                         #     "\nMatching Mentioned Author Username: ", engager_username)
 
                         engager_author_username = author_username
-                        outputs_df = pd.read_csv(
-                            "outputs/df.csv", index_col=0, on_bad_lines="skip")
-                        if engager_author_username in outputs_df.index:
-                            try:
-                                outputs_df.loc[engager_author_username,
-                                               "Author"] = engager_user["name"]
-                                outputs_df.loc[engager_author_username,
-                                               "Favorites"] = int(included_likes)
-                                outputs_df.loc[engager_author_username,
-                                               "Retweets"] = int(included_retweets)
-                                outputs_df.loc["Tweet ID"] = included_id
 
-                                author = df['Author']
-                                print(
-                                    "\nengager_author_username found in outputs_df.index: ", author)
-                            except:
-                                authors_index = [engager_author_username]
-                                df0 = pd.DataFrame(
-                                    index=authors_index, data=engager_user["name"], columns=["Author"])
-                                df1 = pd.DataFrame(
-                                    index=authors_index, data=int(included_likes), columns=["Favorites"])
-                                df2 = pd.DataFrame(
-                                    index=authors_index, data=int(included_retweets), columns=["Retweets"])
-                                df3 = pd.DataFrame(
-                                    index=authors_index, data=included_id, columns=["Tweet ID"])
-                                df = pd.concat([df1, df2, df3], axis=1)
+                        # if engager_author_username in outputs_df.index:
+                        df0 = pd.DataFrame(
+                            index=authors_index, data=engager_user["name"], columns=["Author"])
+                        df1 = pd.DataFrame(
+                            index=authors_index, data=int(included_likes), columns=["Favorites"])
+                        df2 = pd.DataFrame(
+                            index=authors_index, data=int(included_retweets), columns=["Retweets"])
+                        df3 = pd.DataFrame(
+                            index=authors_index, data=int(included_reply_count), columns=["Replies"])
+                        df4 = pd.DataFrame(
+                            index=authors_index, data=included_id, columns=["Tweet ID"])
+                        df = pd.concat([df0, df1, df2, df3, df4], axis=1)
 
                     if engager_id == included_author_id:
                         print("\nTweet's Mentioned UserID: ", engager_id,
@@ -348,41 +258,56 @@ def get_stream(update_flag, remove_flag):
                         # print(
                         #     "\nMatching Included/Parent Author Username: ", engager_username)
                         engager_author_username = included_author_username
-                        outputs_df = pd.read_csv(
-                            "outputs/df.csv", index_col=0, on_bad_lines="skip")
 
-                        if engager_author_username in outputs_df.index:
-                            try:
-                                outputs_df.loc[engager_author_username,
-                                               "Author"] = included_author_name
-                                outputs_df.loc[engager_author_username,
-                                               "Favorites"] = int(included_likes)
-                                outputs_df.loc[engager_author_username,
-                                               "Retweets"] = int(included_retweets)
-                                outputs_df.loc[engager_author_username]["Tweet ID"] = included_id
+                        authors_index = [engager_author_username]
+                        df0 = pd.DataFrame(
+                            index=authors_index, data=included_author_name, columns=["Author"])
+                        df1 = pd.DataFrame(
+                            index=authors_index, data=int(included_likes), columns=["Favorites"])
+                        df2 = pd.DataFrame(
+                            index=authors_index, data=int(included_retweets), columns=["Retweets"])
+                        df3 = pd.DataFrame(
+                            index=authors_index, data=int(included_reply_count), columns=["Replies"])
+                        df4 = pd.DataFrame(
+                            index=authors_index, data=included_id, columns=["Tweet ID"])
+                        df = pd.concat([df0, df1, df2, df3, df4], axis=1)
 
-                                author = df['Author']
-                                print(
-                                    "\nincluded_engager_username found in outputs_df.index: ", author)
-                            except:
-                                authors_index = [engager_author_username]
-                                df0 = pd.DataFrame(
-                                    index=authors_index, data=included_author_name, columns=["Author"])
-                                df1 = pd.DataFrame(
-                                    index=authors_index, data=int(included_likes), columns=["Favorites"])
-                                df2 = pd.DataFrame(
-                                    index=authors_index, data=int(included_retweets), columns=["Retweets"])
-                                df3 = pd.DataFrame(
-                                    index=authors_index, data=included_id, columns=["Tweet ID"])
-                                df = pd.concat([df1, df2, df3], axis=1)
+                export_include_df = df  # FIX THIS EXPORT DF SO USABLE IN POSTGRES_TOOLS.PY
+                print("\nExport Include DF: ", export_include_df)
+                print("\nExport DF: ", export_df)
 
-                outputs_df.to_csv("outputs/df.csv", sep="\t")
-                # outputs_json.to_json("outputs/df.json", orient="index")
-                export_df = df  # FIX THIS EXPORT DF SO USABLE IN POSTGRES_TOOLS.PY
+                # update to use non-deprecated method
+                print("DB has table: ", engine.has_table(
+                    "df_table"))  # returns True
 
-                # TODO: add logic to compare metrics for author and included/parent author
-                # aggregate stats for participating author + stats for included/parent author
-                # compare to current dataabase and push changes? or overwrite?
+                if engine.has_table("df_table") == False:
+                    print("Creating table...")
+                    export_include_df.to_sql(
+                        "df_table", engine, if_exists="replace")
+                    print("Table created")
+
+                else:  # if table already exists, update or append to it
+                    existing_df = pd.read_sql_table("df_table", engine)
+                    if included_id in existing_df["Tweet ID"].values:
+                        print("Tweet ID already exists in table")
+                        print("Updating table...")
+                        existing_row = existing_df.loc[existing_df["Tweet ID"]]
+                        # continue here
+                        # decide whether to replace completely every time if tweet id matches
+                        # or if we want to check and update only the columns that have changed
+                        # if the former - then how to aggregate metrics from each tweet ID
+                        # associated with the same author to get a total for that author
+                        print("Table updated")
+                    else:
+                        print("Appending to table...")
+                        export_include_df.to_sql(
+                            "df_table", engine, if_exists="append")
+                        print("Table appended")
+                print("DF Table: ", existing_df)
+
+# the index as it stands is the author username of the original tweet
+# need to decide if we want to keep it that way or change it to the author username of the included user
+# the included user has more mentions and is more likely to be the one we want to track
 
 
 def main():

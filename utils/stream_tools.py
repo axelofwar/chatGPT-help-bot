@@ -12,6 +12,7 @@ with open("utils/yamls/config.yml", "r") as file:
 bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
 
 
+# SET BEARER TOKEN AUTH
 def bearer_oauth(r):
     """
     Method required by bearer token authentication.
@@ -22,6 +23,7 @@ def bearer_oauth(r):
     return r
 
 
+# CALL USERS ENDPOINT FOR USERNAME OF TWEETER BY TWEET AUTHOR ID
 def get_username_by_author_id(author_id):
     response = requests.get(
         f"https://api.twitter.com/2/users/{author_id}",
@@ -35,6 +37,7 @@ def get_username_by_author_id(author_id):
     return response.json()
 
 
+# GET RULES OF CURRENT STREAM
 def get_rules():
     response = requests.get(
         "https://api.twitter.com/2/tweets/search/stream/rules", auth=bearer_oauth
@@ -48,6 +51,7 @@ def get_rules():
     return response.json()
 
 
+# DELETE CURRENT SET STREAM SET RULES
 def delete_all_rules(rules):
     if rules is None or "data" not in rules:
         return None
@@ -68,6 +72,7 @@ def delete_all_rules(rules):
     print(json.dumps(response.json()))
 
 
+# SET CURRENT STREAM RULES
 def set_rules(delete, update_flag):
     # add more error handling for real-time rule adjustment gaps
     with open("utils/yamls/rules.yml", "r") as file:
@@ -110,6 +115,7 @@ def set_rules(delete, update_flag):
     print(json.dumps(response.json()))
 
 
+# UPDATE CURRENT STREAM RULES
 def update_rules():
     with open("utils/yamls/config.yml", "r") as file:
         config = yaml.load(file, Loader=yaml.FullLoader)
@@ -136,6 +142,7 @@ def update_rules():
         print("RULE RESET TO EMPTY")
 
 
+# REMOVE CURRENT STREAM RULES
 def remove_rules(rules):
     remove_it = config["REMOVE_RULE"]
     if remove_it == "":
@@ -159,6 +166,7 @@ def remove_rules(rules):
     return remove_flag
 
 
+# USE TWEETS ENDPOINT TO GET TWEEET DATA BY TWEET ID
 def get_data_by_id(tweet_id):
     response = requests.get(
         f"https://api.twitter.com/2/tweets/{tweet_id}?expansions=author_id,entities.mentions.username,geo.place_id,referenced_tweets.id&media.fields=url&poll.fields=options&tweet.fields=public_metrics",
@@ -172,19 +180,7 @@ def get_data_by_id(tweet_id):
     return response.json()
 
 
-def get_username_by_author_id(author_id):
-    response = requests.get(
-        f"https://api.twitter.com/2/users/{author_id}",
-        auth=bearer_oauth
-    )
-    if response.status_code != 200:
-        raise Exception(
-            "Cannot get user data (HTTP {}): {}".format(
-                response.status_code, response.text)
-        )
-    return response.json()
-
-
+# GET ENGAGEMENT METRICS FOR TWEET BY TWEET ID
 def get_likes_retweets_impressions(tweet_id):
     response = requests.get(
         f"https://api.twitter.com/1.1/statuses/show.json?id={tweet_id}",

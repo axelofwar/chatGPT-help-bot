@@ -12,22 +12,7 @@ POSTGRES_ADMIN_USER = "postgres"
 POSTGRES_USER = os.getenv("POSTGRES_USERNAME")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 
-
-# def check_postgres():
-#     try:
-#         conn = psycopg2.connect(
-#             host="localhost",
-#             database="test",
-#             user=POSTGRES_USER,
-#             password=POSTGRES_PASSWORD)
-#         print("Postgres is running and configured correctly")
-#         conn.close()
-#         return True
-#     except psycopg2.OperationalError as e:
-#         print(f"PostgreSQL is not running or configured: {e}")
-#         return False
-
-
+# POSTGRES CONNECTION CURSOR VERSION
 # def check_postgres():
 #     try:
 #         conn = psycopg2.connect(
@@ -101,56 +86,7 @@ POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 #             cur.close()
 #             conn.close()
 
-# def start_db(db_name):
-#     if check_postgres():
-#         engine = create_engine(
-#             'postgresql://'+POSTGRES_USER+':'+POSTGRES_PASSWORD+'@localhost:5432/'+db_name)
-#     else:
-#         create_role_and_grant_admin_privileges(
-#             POSTGRES_USER, POSTGRES_PASSWORD
-#         )
-#         start_postgres()
-#         engine = create_engine(
-#             'postgresql://'+POSTGRES_USER+':'+POSTGRES_PASSWORD+'@localhost:5432/'+db_name)
-#     return engine
-
-# def write_to_db(engine, df, table_name):
-#     if check_postgres():
-#         df.to_sql(table_name, engine, if_exists='append', index=True)
-#     else:
-#         create_role_and_grant_admin_privileges(
-#             POSTGRES_USER, POSTGRES_PASSWORD
-#         )
-#         start_postgres()
-#         engine = create_engine(
-#             'postgresql://'+POSTGRES_USER+':'+POSTGRES_PASSWORD+'@localhost:5432/test')
-#         df.to_sql(table_name, engine, if_exists='append', index=True)
-
-# def main():
-# df = read_csv("outputs/df.csv")
-# if check_postgres():
-#     engine = start_db("test")
-# else:
-#     create_role_and_grant_admin_privileges(
-#         POSTGRES_USER, POSTGRES_PASSWORD
-#     )
-#     start_postgres()
-#     engine = start_db("test")
-
-# write_to_db(engine, df, "test_table")
-
-
-# def main():
-#     df = read_csv("outputs/df.csv")
-#     engine = start_db("test")
-#     write_to_db(engine, df, "test_table")
-
-
-# if __name__ == "__main__":
-#     main()
-
-
-# SUBPROCESS VERSION
+# POSTGRES SUBPROCESS VERSION
 
 # CSV FUNCTIONS
 def write_csv(df, csv_path):
@@ -212,6 +148,8 @@ def get_admin_user(database_name):
     for row in rows:
         print(row)
 
+# MAIN FUNCTION FOR COMPARING AND UPDATING DATABASE
+
 
 def main():
     # Assuming database and roles aren't created yet
@@ -222,11 +160,20 @@ def main():
     # we will either call this in a listener that triggers with each new twitter listener trigger
     # or we will call this in a while loop that refreshes every x minutes and pushes DF updates to database
 
-    # Assuming database and roles are created
+    # Assuming database and roles already exist
     engine = start_db("test")
     df = fs.get_export_df()
     print(df)
-    write_to_db(engine, df, "df_table")
+
+    # TODO: rework so that write_to_db() is called from filtered_stream.py()
+    # deals with conncurrent get_stream never setting export_df proprely
+    # this way we have the df and can inherit the engine from start here
+
+    # TODO: add logic to compare metrics for author and included/parent author
+    # aggregate stats for participating author + stats for included/parent author
+    # compare to current dataabase and push changes? or overwrite?
+
+    # write_to_db(engine, df, "df_table") # currently an empty frame for some reason
 
 
 if __name__ == "__main__":

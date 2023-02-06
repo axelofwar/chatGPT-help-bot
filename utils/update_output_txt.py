@@ -1,6 +1,7 @@
 from utils import twitter_tools as th
 
 
+# PRINT GPT RESPONSE TO FILE
 async def update_output_file(response):
     # TODO: modify to use r+ for read/write and make one open call
     with open("outputs/output.txt", "r") as outputFile:

@@ -8,7 +8,8 @@ with open("utils/config.yml", "r") as file:
 running = True
 
 
-async def init_twitter():  # function for initializing Twitter API
+# INITIALIZE TWITTER API
+async def init_twitter():
     auth = tweepy.OAuthHandler(
         os.getenv("TWITTER_API_KEY"), os.getenv("TWITTER_API_SECRET_KEY"))
     auth.set_access_token(os.getenv("TWITTER_ACCESS_TOKEN"),
@@ -18,6 +19,7 @@ async def init_twitter():  # function for initializing Twitter API
     return api
 
 
+# GET TWEET HISTORY BY ACCOUNT FOR DAYS SPECIFIED IN CONFIG
 async def call_once(api, account, cancel):
     if not cancel:
         tweets = api.search_tweets(
@@ -29,6 +31,7 @@ async def call_once(api, account, cancel):
         return cancel
 
 
+# PRINT TWEET HISTORY TO FILE
 async def print_tweet_history(tweets, tweetFile):
     count = 1
     for tweet in tweets:

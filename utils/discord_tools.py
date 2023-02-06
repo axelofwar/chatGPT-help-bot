@@ -13,6 +13,7 @@ with open("utils/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 
 
+# INITIALIZE DISCORD CLIENT
 async def init_discord(cancel):
     # Create a Discord client
     if not cancel:
@@ -45,7 +46,7 @@ async def init_discord(cancel):
     return client
 
 
-# function for intializing Discord client and getting desired channel history
+# GET CHANNEL HISTORY BY ACCOUNT FOR DAYS PASSED IN
 async def get_channel_history(channel_id, history_days, cancel):
 
     print("DISCORD BOT ENTERED")
@@ -87,6 +88,8 @@ async def get_channel_history(channel_id, history_days, cancel):
 
     # TODO: add more channels to this list
     print("DISCORD BOT STARTED")
+
+    # UI LOGIC TO PROCESS CHANNEL ID USER INPUT
     # if channel_id == None:
     #     # use channel_id from config id
     #     channel_value = int(config["data_channel_id"])
@@ -118,6 +121,7 @@ async def get_channel_history(channel_id, history_days, cancel):
     return channel, channel_history
 
 
+# GET DISCORD MESSAGES IN LOOP AND WRITE TO FILE
 async def get_discord_messages(channel_history, outputFile):
 
     async for message in channel_history:
@@ -143,6 +147,7 @@ messages = []
 questions = []
 
 
+# GET POTENTIAL QUESTIONS FROM DISCORD MESSAGES
 async def get_questions(chat_history):
     async for message in chat_history:
         messages.append(message.content)
@@ -161,6 +166,7 @@ async def get_questions(chat_history):
     return messages
 
 
+# FIND KEYWORDS IN DISCORD MESSAGES
 async def get_keywords(channel_history):
     async for message in channel_history:
         word_counts = Counter()
