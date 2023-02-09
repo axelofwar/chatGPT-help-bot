@@ -261,7 +261,7 @@ def get_stream(update_flag, remove_flag):
 
                         authors_index = [engager_author_username]
                         df0 = pd.DataFrame(
-                            index=authors_index, data=included_author_name, columns=["Author"])
+                            index=authors_index, data=included_name, columns=["Author"])
                         df1 = pd.DataFrame(
                             index=authors_index, data=int(included_likes), columns=["Favorites"])
                         df2 = pd.DataFrame(
