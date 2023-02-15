@@ -2,7 +2,7 @@ import os
 import tweepy
 import yaml
 
-with open("utils/config.yml", "r") as file:
+with open("utils/yamls/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 
 running = True

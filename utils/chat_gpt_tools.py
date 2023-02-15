@@ -5,7 +5,7 @@ import yaml
 from dotenv import load_dotenv
 load_dotenv()
 
-with open("utils/config.yml", "r") as file:
+with open("utils/yamls/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 
 

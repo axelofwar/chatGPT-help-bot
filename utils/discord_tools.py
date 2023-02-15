@@ -9,7 +9,7 @@ import yaml
 from collections import Counter
 
 
-with open("utils/config.yml", "r") as file:
+with open("utils/yamls/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 
 

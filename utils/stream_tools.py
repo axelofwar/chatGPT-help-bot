@@ -2,10 +2,11 @@ import json
 import os
 import requests
 import yaml
-import filtered_stream as fs
+# import filtered_stream as fs
 from dotenv import load_dotenv
 load_dotenv()
 
+update_flag = False
 with open("utils/yamls/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 
@@ -161,7 +162,7 @@ def remove_rules(rules):
         print("REMOVE RULE RESET TO EMPTY")
 
     delete_all_rules(get_rules())
-    set_rules(new_rules, fs.update_flag)
+    set_rules(new_rules, update_flag)
     remove_flag = True
     return remove_flag
 

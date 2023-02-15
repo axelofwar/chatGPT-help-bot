@@ -3,7 +3,7 @@ import psycopg2
 import csv
 import os
 import subprocess
-import filtered_stream as fs
+# import filtered_stream as fs
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 load_dotenv()
@@ -78,18 +78,18 @@ def get_admin_user(database_name):
 # MAIN FUNCTION FOR COMPARING AND UPDATING DATABASE
 
 
-# def main():
-#     # Assuming database and roles aren't created yet
-#     # create_role(POSTGRES_USER, POSTGRES_PASSWORD)
-#     # create_db("test", POSTGRES_ADMIN_USER)
+def main():
+    # Assuming database and roles aren't created yet
+    # create_role(POSTGRES_USER, POSTGRES_PASSWORD)
+    # create_db("test", POSTGRES_ADMIN_USER)
 
-#     # Assuming database and roles already exist
-#     engine = start_db("test")
-#     df = fs.get_export_df()
-#     print(df)
+    # Assuming database and roles already exist
+    engine = start_db("test")
+    # df = fs.get_export_df()
+    # print(df)
 
-#     # write_to_db(engine, df, "df_table") # currently an empty frame for some reason
+    # write_to_db(engine, df, "df_table") # currently an empty frame for some reason
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()

@@ -5,7 +5,7 @@ from utils import twitter_tools as th
 
 
 class UI:
-    file = open("utils/config.yml", "r+")
+    file = open("utils/yamls/config.yml", "r+")
     config = yaml.load(file, Loader=yaml.FullLoader)
 
     def __init__(self):
