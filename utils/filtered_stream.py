@@ -42,7 +42,8 @@ def get_stream(update_flag, remove_flag):
 
     if response.status_code == 429:
         print("TOO MANY REQUESTS")
-        time.sleep(60)
+        time.sleep(180)  # wait 3 minutes
+        # waiting only 60 seconds doesn't seem to solve the problem
         get_stream(update_flag, remove_flag)
 
     if response.status_code != 200:
@@ -131,6 +132,8 @@ def get_stream(update_flag, remove_flag):
                 print("Restarting stream...")
                 get_stream(update_flag, remove_flag)
 
+            id = tweet_data["data"]["id"]
+            print("\nTweet ID by tweet_data: ", id)
             engagement_metrics = st.get_likes_retweets_impressions(id)
             tweet_favorite_count = int(engagement_metrics["favorite_count"])
             tweet_retweet_count = int(engagement_metrics["retweet_count"])
@@ -295,32 +298,47 @@ def get_stream(update_flag, remove_flag):
                         row = existing_df.loc[existing_df["Tweet ID"]
                                               == included_id]
                         print("Row Vals: ", row.values)
+
                         row = row.values[0]
-                        favorites = row[1]
-                        retweets = row[2]
+                        print("Size row: ", len(row))
+                        if len(row) > 6:
+                            row = row[1:]
+                            if "level_0" in existing_df.columns:
+                                print("DAMNIT")
+                                existing_df.dropna(inplace=True)
+                                existing_df.drop(
+                                    columns=["level_0"], axis=1, inplace=True)
+                        favorites = row[2]
+                        retweets = row[3]
                         replies = row[4]
                         print("Favorites: ", favorites)
                         print("Retweets: ", retweets)
                         print("Replies: ", replies)
 
                         # update the values in the existing table
-                        if str(included_likes) > favorites:
+                        if int(included_likes) > int(favorites):
                             print(f"Likes updated to {included_likes}")
                             existing_df.loc[existing_df["Tweet ID"] == included_id, [
                                 "Favorites"]] = included_likes
-                        if str(included_retweets) > retweets:
+                        if int(included_retweets) > int(retweets):
                             print(f"Retweets updated to {included_retweets}")
                             existing_df.loc[existing_df["Tweet ID"] == included_id, [
                                 "Retweets"]] = included_retweets
-                        if str(included_reply_count) > replies:
+                        if int(included_reply_count) > int(replies):
                             print(f"Replies updated to {included_reply_count}")
                             existing_df.loc[existing_df["Tweet ID"] == included_id, [
                                 "Replies"]] = included_reply_count
-                        # print("DF Table: ", existing_df)
+
+                        if "level_0" in existing_df.columns:
+                            print("DAMNIT")
+                            existing_df.drop(
+                                columns=["level_0"], inplace=True)
 
                         # rework this to write only the updated values - not rewrite the whole table
                         existing_df.to_sql(
-                            "df_table", engine, if_exists="replace")
+                            "df_table", engine, if_exists="replace", index=False)
+                        # here we are losing the engager on updates in favor of not addding duplicates
+                        # and also not messing with our existing index values
 
                         # continue here
                         # decide how to update only the rows that have changed
