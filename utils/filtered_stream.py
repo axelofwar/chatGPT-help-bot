@@ -298,17 +298,17 @@ def get_stream(update_flag, remove_flag):
                         row = row.values[0]
                         favorites = row[1]
                         retweets = row[2]
-                        replies = row[5]
+                        replies = row[4]
                         print("Favorites: ", favorites)
                         print("Retweets: ", retweets)
                         print("Replies: ", replies)
 
                         # update the values in the existing table
-                        if included_likes > favorites:
+                        if str(included_likes) > favorites:
                             print(f"Likes updated to {included_likes}")
                             existing_df.loc[existing_df["Tweet ID"] == included_id, [
                                 "Favorites"]] = included_likes
-                        if included_retweets > retweets:
+                        if str(included_retweets) > retweets:
                             print(f"Retweets updated to {included_retweets}")
                             existing_df.loc[existing_df["Tweet ID"] == included_id, [
                                 "Retweets"]] = included_retweets
@@ -316,7 +316,7 @@ def get_stream(update_flag, remove_flag):
                             print(f"Replies updated to {included_reply_count}")
                             existing_df.loc[existing_df["Tweet ID"] == included_id, [
                                 "Replies"]] = included_reply_count
-                        print("DF Table: ", existing_df)
+                        # print("DF Table: ", existing_df)
 
                         # rework this to write only the updated values - not rewrite the whole table
                         existing_df.to_sql(
@@ -332,6 +332,8 @@ def get_stream(update_flag, remove_flag):
                         export_include_df.to_sql(
                             "df_table", engine, if_exists="append")
                         print("Table appended")
+                # read the table post changes
+                existing_df = pd.read_sql_table("df_table", engine)
                 print("DF Table: ", existing_df)
 
 # the index as it stands is the author username of the original tweet
