@@ -2,6 +2,15 @@ import os
 import tweepy
 import yaml
 
+'''
+Tools for interacting with twitter API - single instance calls - contains functions for:
+    - Initializing the twitter API
+    - Getting the tweet history of a specified account for a specified number of days
+    - Printing the tweet history to a file
+    
+The keys for the twitter API are stored in the .env file
+'''
+
 with open("utils/yamls/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 

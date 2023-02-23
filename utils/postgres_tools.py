@@ -8,6 +8,24 @@ from sqlalchemy import create_engine
 from dotenv import load_dotenv
 load_dotenv()
 
+'''
+Tools for interacting with postgresql databases - contains functions for:
+    - Connecting and creating a database
+    - Creating a role
+    - Writing a dataframe to a csv
+    - Reading a dataframe from a csv
+    - Starting our connection to the database
+    - Writing a dataframe to the database
+    - Getting the admin user of the database
+
+TODO: add functions for adding columns to the table if they don't exist: 
+    - index 
+    - author 
+    - favorites
+    - retweets
+    - replies
+    - tweet_id
+'''
 
 # POSTGRES CONFIG
 POSTGRES_ADMIN_USER = "postgres"
@@ -16,13 +34,12 @@ POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 
 
 # POSTGRES SUBPROCESS FUNCTIONS
-
 # CSV FUNCTIONS
-def write_csv(df, csv_path):
+def write_df_to_csv(df, csv_path):
     df.to_csv(csv_path, index=False, quoting=csv.QUOTE_ALL)
 
 
-def read_csv(csv_path):
+def read_df_to_csv(csv_path):
     df = pd.read_csv(
         csv_path, index_col=0, on_bad_lines="skip")
     return df
@@ -75,21 +92,20 @@ def get_admin_user(database_name):
     for row in rows:
         print(row)
 
-# MAIN FUNCTION FOR COMPARING AND UPDATING DATABASE
 
-
-def main():
+# MAIN FUNCTION FOR STANDALONE DB FUNCTIONS
+# def main():
     # Assuming database and roles aren't created yet
     # create_role(POSTGRES_USER, POSTGRES_PASSWORD)
     # create_db("test", POSTGRES_ADMIN_USER)
 
     # Assuming database and roles already exist
-    engine = start_db("test")
+    # engine = start_db("test")
     # df = fs.get_export_df()
     # print(df)
 
     # write_to_db(engine, df, "df_table") # currently an empty frame for some reason
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

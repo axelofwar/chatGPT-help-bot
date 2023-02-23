@@ -1,11 +1,18 @@
 import os
 import pandas as pd
-from dotenv import load_dotenv
-
-import stream_tools as st
 import postgres_tools as pg
-
+from dotenv import load_dotenv
 load_dotenv()
+
+'''
+Standalone file to update the db with new tweet data - contains functions for:
+    - adding new tweets to the db
+    - updating existing tweets in the db
+
+The db is updated by comparing the tweet id of the new tweet to the tweet ids in the db
+We are using postgresql for the db and engine is our connection to the 'test' db
+For use -> change # test data to the data you want to test against the db
+'''
 
 bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
 engine = pg.start_db("test")

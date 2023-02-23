@@ -9,5 +9,11 @@ from utils import stream_tools as st
 from utils import twitter_tools as th
 from utils import update_output_txt as uout
 
+'''
+Modularized utilities for use in app.py
+
+TODO: fix useability of this file
+'''
+
 with open("utils/yamls/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)

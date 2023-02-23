@@ -5,6 +5,12 @@ import yaml
 from dotenv import load_dotenv
 load_dotenv()
 
+'''
+Tools for interacting with the OpenAI API - contains functions for:
+    - Setting up the OpenAI API key
+    - Getting the response from the Chat GPT API
+'''
+
 with open("utils/yamls/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 

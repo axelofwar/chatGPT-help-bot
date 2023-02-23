@@ -3,11 +3,18 @@ import discord
 import os
 import re
 import sys
-import urllib.parse
+# import urllib.parse # for links in channel messages
 import yaml
-
 from collections import Counter
 
+'''
+Tools for interacting with the Discord API - contains functions for:
+    - Setting up the Discord client
+    - Getting the channel history of a channel
+    - Getting the messages from a channel history
+    - Getting the content of a message
+    - Getting the questions and keywords from messages
+'''
 
 with open("utils/yamls/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)

@@ -10,6 +10,31 @@ import postgres_tools as pg
 
 load_dotenv()
 
+'''
+This is app for the filtered twitter stream - contains functions for:
+    - Setting up the bearer token
+    - Getting the username of a tweet author by their author id
+    - Getting the rules from the rules.yml file
+    - Adding rules to the rules.yml file
+    - Removing rules from the rules.yml file
+    - Updating the rules on the Twitter API
+
+Currently we are using the filtered stream to get tweets from the following users:
+    - @axelofwar
+    - @y00tsNFT
+    - DeGodsNFT
+
+Status: Working - 2023-02-23 - run the stream and store tweets matching the rules
+    - store tweet ID and get info from the stream endpoint
+    - get engager metrics from the stream endpoint
+    - get author metrics from users endpoint by author ID from stream endpoint included user
+    - create dataframes from gathered data and compare to database
+    - if tweet ID is not in database, add to database
+    - if tweet ID is in database, replace WHOLE database with existing_df + updated metrics
+    
+TODO: update to replace only the row - not the whole database with existing_df + updated
+'''
+
 bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
 engine = pg.start_db("test")
 table1 = "df_table"
@@ -300,7 +325,7 @@ def get_stream(update_flag, remove_flag):
                         print("Row Vals: ", row.values)
 
                         row = row.values[0]
-                        print("Size row: ", len(row))
+                        # print("Size row: ", len(row))
                         if len(row) > 6:
                             row = row[1:]
                             if "level_0" in existing_df.columns:
@@ -354,9 +379,10 @@ def get_stream(update_flag, remove_flag):
                 existing_df = pd.read_sql_table("df_table", engine)
                 print("DF Table: ", existing_df)
 
-# the index as it stands is the author username of the original tweet
+# the index = engager user name (user who interacted with the included user)
+# the author = included user name (parent tweet author)
 # need to decide if we want to keep it that way or change it to the author username of the included user
-# the included user has more mentions and is more likely to be the one we want to track
+# the included user (author) has more mentions and is more likely to be the one we want to track
 
 
 def main():

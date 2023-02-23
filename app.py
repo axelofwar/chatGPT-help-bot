@@ -2,15 +2,22 @@ import asyncio
 import sys
 import yaml
 # from utils import mod as tools
-from utils import postgres_tools as pg
-from utils import stream_tools as st
+# from utils import postgres_tools as pg
+# from utils import stream_tools as st
 from utils import twitter_tools as th
 from utils import discord_tools as dh
 from utils import chat_gpt_tools as gpt
-from utils import update_output_txt as uout
 from dotenv import load_dotenv
 
 load_dotenv()
+
+'''
+This is the main file for the bot - contains functions for:
+    - One time twitter call search_tweets()
+    - discord channel history search on discords bot is added to (TNT-HQ atm)
+    - UI for user to input channel ID and history days - currently commented out
+    - GPT-3 call to generate response
+'''
 
 with open("utils/yamls/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
@@ -33,6 +40,31 @@ max_tokens = params["max_tokens"]
 data_channel_id = config["data_channel_id"]
 history_days = 30
 cancel = False
+
+
+# PRINT GPT RESPONSE TO FILE
+async def update_output_file(response):
+    # TODO: modify to use r+ for read/write and make one open call
+    with open("outputs/output.txt", "r") as outputFile:
+        lines = outputFile.readlines()
+        outputFile.close()
+
+    with open("outputs/output.txt", "w") as outputFile:
+        found_response = False
+        for line in lines:
+            if "RESPONSE: " in line:
+                if not found_response:
+                    outputFile.write(
+                        "RESPONSE: " + response.choices[0].text + "\n")
+                    found_response = True
+            else:
+                outputFile.write(line)
+        if not found_response:
+            outputFile.write(
+                "RESPONSE: " + response.choices[0].text + "\n")
+    outputFile.close()
+    th.running = False
+    return th.running
 
 
 async def main():
@@ -97,7 +129,7 @@ async def main():
         GPTresponse = await gpt.chatGPTcall(mprompt, model, temp, max_tokens)
         print("RESPONSE: ", GPTresponse.choices[0].text)
 
-        running = updateOutput = await uout.update_output_file(GPTresponse)
+        running = updateOutput = await update_output_file(GPTresponse)
         # prints response to terminal + output file
 
         # TODO: do stuff with search_results from twitter + channel & channel_history from discord

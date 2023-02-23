@@ -2,9 +2,18 @@ import json
 import os
 import requests
 import yaml
-# import filtered_stream as fs
 from dotenv import load_dotenv
 load_dotenv()
+
+'''
+Tools for interacting with the Twitter API in a filtered stream - contains functions for:
+    - Setting up the bearer token
+    - Getting the username of a tweet author by their author id
+    - Getting the rules from the rules.yml file
+    - Adding rules to the rules.yml file
+    - Removing rules from the rules.yml file
+    - Updating the rules on the Twitter API
+'''
 
 update_flag = False
 with open("utils/yamls/config.yml", "r") as file:

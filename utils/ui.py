@@ -1,7 +1,17 @@
 import tkinter as tk
 import yaml
-
 from utils import twitter_tools as th
+
+'''
+UI for user to input channel ID and history days - this contains functions for:
+    - making the window
+    - updating the history days
+    - updating the channel ID
+    - canceling the UI
+    - running the UI
+    
+This interacts with the config file for the channel ID and history days in default cases
+'''
 
 
 class UI:
