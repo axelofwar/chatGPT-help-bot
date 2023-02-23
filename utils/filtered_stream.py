@@ -155,7 +155,7 @@ def get_stream(update_flag, remove_flag):
             export_df = df
             print("\nExport_df:", export_df)
 
-            if tweet_data["includes"]:
+            if tweet_data["includes"] and "tweets" in tweet_data["includes"]:
                 # loop to go through all referenced/included tweets
                 for iter in range(len(included_tweets)):
                     included = included_tweets[iter]
@@ -164,7 +164,8 @@ def get_stream(update_flag, remove_flag):
                     included_pub_metrics = included["public_metrics"]
 
                     included_likes = included_pub_metrics["like_count"]
-                    included_reply_count = included_pub_metrics["reply_count"]
+                    included_reply_count = int(
+                        included_pub_metrics["reply_count"])
                     included_retweets = included_pub_metrics["retweet_count"]
                     included_quote_count = included_pub_metrics["quote_count"]
                     included_impressions = included_pub_metrics["impression_count"]
@@ -277,9 +278,6 @@ def get_stream(update_flag, remove_flag):
                 print("\nExport DF: ", export_df)
 
                 # update to use non-deprecated method
-                print("DB has table: ", engine.has_table(
-                    "df_table"))  # returns True
-
                 if engine.has_table("df_table") == False:
                     print("Creating table...")
                     export_include_df.to_sql(
@@ -288,15 +286,46 @@ def get_stream(update_flag, remove_flag):
 
                 else:  # if table already exists, update or append to it
                     existing_df = pd.read_sql_table("df_table", engine)
+                    # if tweet is already being tracked, update the values
+                    # need to add another table that aggregates the values by user in this table
+                    # that aggregated table will be what is used to make metrics based decisions
                     if included_id in existing_df["Tweet ID"].values:
-                        print("Tweet ID already exists in table")
+                        print(f"Tweet #{included_id} already exists in table")
                         print("Updating table...")
-                        existing_row = existing_df.loc[existing_df["Tweet ID"]]
+                        row = existing_df.loc[existing_df["Tweet ID"]
+                                              == included_id]
+                        print("Row Vals: ", row.values)
+                        row = row.values[0]
+                        favorites = row[1]
+                        retweets = row[2]
+                        replies = row[5]
+                        print("Favorites: ", favorites)
+                        print("Retweets: ", retweets)
+                        print("Replies: ", replies)
+
+                        # update the values in the existing table
+                        if included_likes > favorites:
+                            print(f"Likes updated to {included_likes}")
+                            existing_df.loc[existing_df["Tweet ID"] == included_id, [
+                                "Favorites"]] = included_likes
+                        if included_retweets > retweets:
+                            print(f"Retweets updated to {included_retweets}")
+                            existing_df.loc[existing_df["Tweet ID"] == included_id, [
+                                "Retweets"]] = included_retweets
+                        if str(included_reply_count) > replies:
+                            print(f"Replies updated to {included_reply_count}")
+                            existing_df.loc[existing_df["Tweet ID"] == included_id, [
+                                "Replies"]] = included_reply_count
+                        print("DF Table: ", existing_df)
+
+                        # rework this to write only the updated values - not rewrite the whole table
+                        existing_df.to_sql(
+                            "df_table", engine, if_exists="replace")
+
                         # continue here
-                        # decide whether to replace completely every time if tweet id matches
-                        # or if we want to check and update only the columns that have changed
-                        # if the former - then how to aggregate metrics from each tweet ID
-                        # associated with the same author to get a total for that author
+                        # decide how to update only the rows that have changed
+                        # then how to aggregate metrics from all tweet IDs per user/author
+                        # get totals of engagers vs. author and weight them accordingly
                         print("Table updated")
                     else:
                         print("Appending to table...")
