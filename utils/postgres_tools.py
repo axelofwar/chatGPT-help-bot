@@ -31,6 +31,8 @@ TODO: add functions for adding columns to the table if they don't exist:
 POSTGRES_ADMIN_USER = "postgres"
 POSTGRES_USER = os.getenv("POSTGRES_USERNAME")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+POSTGRES_HOST = os.getenv("POSTGRESQL_HOST")
+POSTGRES_PORT = os.getenv("POSTGRESQL_PORT")
 
 
 # POSTGRES SUBPROCESS FUNCTIONS
@@ -71,7 +73,8 @@ def create_role(user, password):
 # DATABASE INTERACTION FUNCTIONS
 def start_db(db_name):
     engine = create_engine(
-        'postgresql://'+POSTGRES_USER+':'+POSTGRES_PASSWORD+'@localhost:5433/'+db_name)
+        # 'postgresql://'+POSTGRES_USER+':'+POSTGRES_PASSWORD+'@localhost:5433/'+db_name)
+        'postgresql://'+POSTGRES_USER+':'+POSTGRES_PASSWORD+'@'+POSTGRES_HOST+':'+POSTGRES_PORT+'/'+db_name)
     return engine
 
 
@@ -99,8 +102,10 @@ def get_admin_user(database_name):
     # create_role(POSTGRES_USER, POSTGRES_PASSWORD)
     # create_db("test", POSTGRES_ADMIN_USER)
 
+    # with open("utils/yamls/config.yml", "r") as file:
+    #     config = yaml.load(file, Loader=yaml.FullLoader)
     # Assuming database and roles already exist
-    # engine = start_db("test")
+    # engine = start_db(config["db_name"])
     # df = fs.get_export_df()
     # print(df)
 

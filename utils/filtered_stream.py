@@ -31,13 +31,18 @@ Status: Working - 2023-02-23 - run the stream and store tweets matching the rule
     - create dataframes from gathered data and compare to database
     - if tweet ID is not in database, add to database
     - if tweet ID is in database, replace WHOLE database with existing_df + updated metrics
-    
+
 TODO: update to replace only the row - not the whole database with existing_df + updated
 '''
 
+with open("utils/yamls/config.yml", "r") as file:
+    config = yaml.load(file, Loader=yaml.FullLoader)
+# To set your enviornment variables in your terminal run the following line:
+    config["RECONNECT_COUNT"] = 0
+
 bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
-engine = pg.start_db("test")
-table1 = "df_table"
+engine = pg.start_db(config["db_name"])
+table = config["table_name"]
 
 
 update_flag = False
@@ -46,12 +51,6 @@ author = ""
 df = pd.DataFrame()
 export_df = pd.DataFrame()
 export_include_df = pd.DataFrame()
-
-
-with open("utils/yamls/config.yml", "r") as file:
-    config = yaml.load(file, Loader=yaml.FullLoader)
-# To set your enviornment variables in your terminal run the following line:
-    config["RECONNECT_COUNT"] = 0
 
 
 def get_export_df():
@@ -306,14 +305,14 @@ def get_stream(update_flag, remove_flag):
                 print("\nExport DF: ", export_df)
 
                 # update to use non-deprecated method
-                if engine.has_table("df_table") == False:
+                if engine.has_table(table) == False:
                     print("Creating table...")
                     export_include_df.to_sql(
-                        "df_table", engine, if_exists="replace")
+                        table, engine, if_exists="replace")
                     print("Table created")
 
                 else:  # if table already exists, update or append to it
-                    existing_df = pd.read_sql_table("df_table", engine)
+                    existing_df = pd.read_sql_table(table, engine)
                     # if tweet is already being tracked, update the values
                     # need to add another table that aggregates the values by user in this table
                     # that aggregated table will be what is used to make metrics based decisions
@@ -361,7 +360,7 @@ def get_stream(update_flag, remove_flag):
 
                         # rework this to write only the updated values - not rewrite the whole table
                         existing_df.to_sql(
-                            "df_table", engine, if_exists="replace", index=False)
+                            table, engine, if_exists="replace", index=False)
                         # here we are losing the engager on updates in favor of not addding duplicates
                         # and also not messing with our existing index values
 
@@ -373,10 +372,10 @@ def get_stream(update_flag, remove_flag):
                     else:
                         print("Appending to table...")
                         export_include_df.to_sql(
-                            "df_table", engine, if_exists="append")
+                            table, engine, if_exists="append")
                         print("Table appended")
                 # read the table post changes
-                existing_df = pd.read_sql_table("df_table", engine)
+                existing_df = pd.read_sql_table(table, engine)
                 print("DF Table: ", existing_df)
 
 # the index = engager user name (user who interacted with the included user)
