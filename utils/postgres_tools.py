@@ -1,10 +1,11 @@
 import pandas as pd
 import psycopg2
+import yaml
 import csv
 import os
 import subprocess
 # import filtered_stream as fs
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, Table, Column, Integer, Text, MetaData, select
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -18,9 +19,9 @@ Tools for interacting with postgresql databases - contains functions for:
     - Writing a dataframe to the database
     - Getting the admin user of the database
 
-TODO: add functions for adding columns to the table if they don't exist: 
-    - index 
-    - author 
+TODO: add functions for adding columns to the table if they don't exist:
+    - index
+    - author
     - favorites
     - retweets
     - replies
@@ -33,6 +34,9 @@ POSTGRES_USER = os.getenv("POSTGRES_USERNAME")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 POSTGRES_HOST = os.getenv("POSTGRESQL_HOST")
 POSTGRES_PORT = os.getenv("POSTGRESQL_PORT")
+
+with open("utils/yamls/config.yml", "r") as f:
+    config = yaml.load(f, Loader=yaml.FullLoader)
 
 
 # POSTGRES SUBPROCESS FUNCTIONS
@@ -75,7 +79,49 @@ def start_db(db_name):
     engine = create_engine(
         # 'postgresql://'+POSTGRES_USER+':'+POSTGRES_PASSWORD+'@localhost:5433/'+db_name)
         'postgresql://'+POSTGRES_USER+':'+POSTGRES_PASSWORD+'@'+POSTGRES_HOST+':'+POSTGRES_PORT+'/'+db_name)
+
     return engine
+
+
+def check_metrics_table(engine, table_name):
+
+    metadata = MetaData(bind=engine)
+
+    if not engine.has_table(table_name):
+        print("Creating table...")
+        Table(table_name, metadata,
+              Column('index', Text, primary_key=True),
+              Column('Author', Text),
+              Column('Favorites', Integer),
+              Column('Retweets', Integer),
+              Column('Replies', Integer),
+              Column('Impressions', Integer),
+              Column('Tweet Id', Text),
+              )
+        metadata.create_all()
+        print("Table created")
+    else:
+        print("Table already exists")
+
+
+def check_users_table(engine, table_name):
+    metadata = MetaData(bind=engine)
+
+    if not engine.has_table(table_name):
+        print("Creating table...")
+        Table(table_name, metadata,
+              Column('index', Text, primary_key=True),
+              Column('Name', Text),
+              Column('Favorites', Integer),
+              Column("Retweets", Integer),
+              Column("Replies", Integer),
+              Column("Impressions", Integer),
+
+              )
+        metadata.create_all()
+        print("Table created")
+    else:
+        print("Table already exists")
 
 
 def write_to_db(engine, df, table_name):
@@ -94,6 +140,15 @@ def get_admin_user(database_name):
     rows = cursor.fetchall()
     for row in rows:
         print(row)
+
+
+def get_user_metric_rows(engine, table_name, username):
+    metadata = MetaData(bind=engine)
+    table = Table(table_name, metadata, autoload=True)
+    query = select([table]).where(table.columns.index == username)
+    result = engine.execute(query)
+    rows = result.fetchall()
+    return rows
 
 
 # MAIN FUNCTION FOR STANDALONE DB FUNCTIONS

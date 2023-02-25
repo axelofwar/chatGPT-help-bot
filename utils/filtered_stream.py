@@ -30,9 +30,9 @@ Status: Working - 2023-02-23 - run the stream and store tweets matching the rule
     - get author metrics from users endpoint by author ID from stream endpoint included user
     - create dataframes from gathered data and compare to database
     - if tweet ID is not in database, add to database
-    - if tweet ID is in database, replace WHOLE database with existing_df + updated metrics
+    - if tweet ID is in database, replace WHOLE database with tweets_df + updated metrics
 
-TODO: update to replace only the row - not the whole database with existing_df + updated
+TODO: update to replace only the row - not the whole database with tweets_df + updated
 '''
 
 with open("utils/yamls/config.yml", "r") as file:
@@ -42,7 +42,13 @@ with open("utils/yamls/config.yml", "r") as file:
 
 bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
 engine = pg.start_db(config["db_name"])
-table = config["table_name"]
+tweetsTable = config["metrics_table_name"]
+usersTable = config["aggregated_table_name"]
+
+
+# check if tables exist and create if not
+pg.check_metrics_table(engine, tweetsTable)
+pg.check_users_table(engine, usersTable)
 
 
 update_flag = False
@@ -195,7 +201,8 @@ def get_stream(update_flag, remove_flag):
                         included_pub_metrics["reply_count"])
                     included_retweets = included_pub_metrics["retweet_count"]
                     included_quote_count = included_pub_metrics["quote_count"]
-                    included_impressions = included_pub_metrics["impression_count"]
+                    included_impressions = int(
+                        included_pub_metrics["impression_count"])
 
                     # print("\nIncluded Tweet ID: ", included_id)
                     # print("\nIncluded/Parent Tweet Author ID: ",
@@ -228,8 +235,11 @@ def get_stream(update_flag, remove_flag):
                             df3 = pd.DataFrame(
                                 index=authors_index, data=int(included_reply_count), columns=["Replies"])
                             df4 = pd.DataFrame(
+                                index=authors_index, data=int(included_impressions), columns=["Impressions"])
+                            df5 = pd.DataFrame(
                                 index=authors_index, data=included_id, columns=["Tweet ID"])
-                            df = pd.concat([df0, df1, df2, df3, df4], axis=1)
+                            df = pd.concat(
+                                [df0, df1, df2, df3, df4, df5], axis=1)
 
                         except:
                             print("ERROR ON GET USERNAME BY AUTHOR ID")
@@ -273,8 +283,10 @@ def get_stream(update_flag, remove_flag):
                         df3 = pd.DataFrame(
                             index=authors_index, data=int(included_reply_count), columns=["Replies"])
                         df4 = pd.DataFrame(
+                            index=authors_index, data=int(included_impressions), columns=["Impressions"])
+                        df5 = pd.DataFrame(
                             index=authors_index, data=included_id, columns=["Tweet ID"])
-                        df = pd.concat([df0, df1, df2, df3, df4], axis=1)
+                        df = pd.concat([df0, df1, df2, df3, df4, df5], axis=1)
 
                     if engager_id == included_author_id:
                         print("\nTweet's Mentioned UserID: ", engager_id,
@@ -297,70 +309,81 @@ def get_stream(update_flag, remove_flag):
                         df3 = pd.DataFrame(
                             index=authors_index, data=int(included_reply_count), columns=["Replies"])
                         df4 = pd.DataFrame(
+                            index=authors_index, data=int(included_impressions), columns=["Impressions"])
+                        df5 = pd.DataFrame(
                             index=authors_index, data=included_id, columns=["Tweet ID"])
-                        df = pd.concat([df0, df1, df2, df3, df4], axis=1)
+                        df = pd.concat([df0, df1, df2, df3, df4, df5], axis=1)
 
                 export_include_df = df  # FIX THIS EXPORT DF SO USABLE IN POSTGRES_TOOLS.PY
                 print("\nExport Include DF: ", export_include_df)
                 print("\nExport DF: ", export_df)
 
                 # update to use non-deprecated method
-                if engine.has_table(table) == False:
+                if engine.has_table(tweetsTable) == False:
                     print("Creating table...")
                     export_include_df.to_sql(
-                        table, engine, if_exists="replace")
+                        tweetsTable, engine, if_exists="replace")
                     print("Table created")
 
                 else:  # if table already exists, update or append to it
-                    existing_df = pd.read_sql_table(table, engine)
+                    tweets_df = pd.read_sql_table(tweetsTable, engine)
                     # if tweet is already being tracked, update the values
                     # need to add another table that aggregates the values by user in this table
                     # that aggregated table will be what is used to make metrics based decisions
-                    if included_id in existing_df["Tweet ID"].values:
-                        print(f"Tweet #{included_id} already exists in table")
-                        print("Updating table...")
-                        row = existing_df.loc[existing_df["Tweet ID"]
-                                              == included_id]
+                    if included_id in tweets_df["Tweet ID"].values:
+                        print(
+                            f"Tweet #{included_id} already exists in Metrics table")
+                        print("Updating Metrics table...")
+                        row = tweets_df.loc[tweets_df["Tweet ID"]
+                                            == included_id]
                         print("Row Vals: ", row.values)
 
                         row = row.values[0]
                         # print("Size row: ", len(row))
                         if len(row) > 6:
                             row = row[1:]
-                            if "level_0" in existing_df.columns:
+                            if "level_0" in tweets_df.columns:
                                 print("DAMNIT")
-                                existing_df.dropna(inplace=True)
-                                existing_df.drop(
+                                tweets_df.dropna(inplace=True)
+                                tweets_df.drop(
                                     columns=["level_0"], axis=1, inplace=True)
                         favorites = row[2]
                         retweets = row[3]
                         replies = row[4]
+                        impressions = row[5]
                         print("Favorites: ", favorites)
                         print("Retweets: ", retweets)
                         print("Replies: ", replies)
 
                         # update the values in the existing table
                         if int(included_likes) > int(favorites):
-                            print(f"Likes updated to {included_likes}")
-                            existing_df.loc[existing_df["Tweet ID"] == included_id, [
+                            print(f"Metrics Likes updated to {included_likes}")
+                            tweets_df.loc[tweets_df["Tweet ID"] == included_id, [
                                 "Favorites"]] = included_likes
                         if int(included_retweets) > int(retweets):
-                            print(f"Retweets updated to {included_retweets}")
-                            existing_df.loc[existing_df["Tweet ID"] == included_id, [
+                            print(
+                                f"Metrics Retweets updated to {included_retweets}")
+                            tweets_df.loc[tweets_df["Tweet ID"] == included_id, [
                                 "Retweets"]] = included_retweets
                         if int(included_reply_count) > int(replies):
-                            print(f"Replies updated to {included_reply_count}")
-                            existing_df.loc[existing_df["Tweet ID"] == included_id, [
+                            print(
+                                f"Metrics Replies updated to {included_reply_count}")
+                            tweets_df.loc[tweets_df["Tweet ID"] == included_id, [
                                 "Replies"]] = included_reply_count
+                        if int(included_impressions) > int(impressions):
+                            print(
+                                f"Metrics Impressions updated to {included_impressions}")
+                            tweets_df.loc[tweets_df["Tweet ID"] == included_id, [
+                                "Impressions"]] = included_impressions
 
-                        if "level_0" in existing_df.columns:
+                        if "level_0" in tweets_df.columns:
                             print("DAMNIT")
-                            existing_df.drop(
+                            tweets_df.drop(
                                 columns=["level_0"], inplace=True)
 
                         # rework this to write only the updated values - not rewrite the whole table
-                        existing_df.to_sql(
-                            table, engine, if_exists="replace", index=False)
+                        tweets_df.to_sql(
+                            tweetsTable, engine, if_exists="replace", index=False)
                         # here we are losing the engager on updates in favor of not addding duplicates
                         # and also not messing with our existing index values
 
@@ -368,20 +391,105 @@ def get_stream(update_flag, remove_flag):
                         # decide how to update only the rows that have changed
                         # then how to aggregate metrics from all tweet IDs per user/author
                         # get totals of engagers vs. author and weight them accordingly
-                        print("Table updated")
+                        print("Metrics Table updated")
                     else:
-                        print("Appending to table...")
+                        print("Appending to Metrics table...")
                         export_include_df.to_sql(
-                            table, engine, if_exists="append")
-                        print("Table appended")
-                # read the table post changes
-                existing_df = pd.read_sql_table(table, engine)
-                print("DF Table: ", existing_df)
+                            tweetsTable, engine, if_exists="append")
+                        print("Metrics Table appended")
 
-# the index = engager user name (user who interacted with the included user)
-# the author = included user name (parent tweet author)
-# need to decide if we want to keep it that way or change it to the author username of the included user
-# the included user (author) has more mentions and is more likely to be the one we want to track
+                # read the table post changes
+                tweets_df = pd.read_sql_table(tweetsTable, engine)
+                print("DF Metrics Table: ", tweets_df)
+
+                users_df = pd.read_sql_table(usersTable, engine)
+                print("USERS DF: ", users_df)
+                # if included_author_username in usersTable["index"].values:
+                if users_df.empty == False:
+                    for user in users_df["index"].values:
+                        print("User: ", user)
+                        if user == included_author_username:
+                            row = users_df.loc[users_df["index"]
+                                               == included_author_username]
+                            print("Row Vals: ", row.values)
+                            row = row.values[0]
+                            if len(row) > 6:
+                                row = row[1:]
+                                if "level_0" in users_df.columns:
+                                    print("DAMNIT")
+                                    users_df.dropna(inplace=True)
+                                    users_df.drop(
+                                        columns=["level_0"], axis=1, inplace=True)
+
+                            Username = row[0]
+                            Name = row[1]
+                            Favorites = row[2]
+                            Retweets = row[3]
+                            Replies = row[4]
+                            Impressions = row[5]
+                            print("Username: ", Username)
+                            print("Name: ", Name)
+                            print("Favorites: ", Favorites)
+                            print("Retweets: ", Retweets)
+                            print("Replies: ", Replies)
+                            print("Impressions: ", Impressions)
+
+                            # get all tweets in tweets_df that have the included_author_username
+                            # then get the sum of all the values for each column
+                            # then update the values in the users_df table
+
+                            user_rows = pg.get_user_metric_rows(
+                                engine, tweetsTable, included_author_username)
+
+                            for row in user_rows:
+                                print("Row: ", row)
+
+                            if int(included_likes) > int(Favorites):
+                                print(
+                                    f"Aggregated Likes updated to {included_likes}")
+                                users_df.loc[users_df["index"] == included_author_username, [
+                                    "Favorites"]] = included_likes
+
+                            if int(included_retweets) > int(Retweets):
+                                print(
+                                    f"Aggregated Retweets updated to {included_retweets}")
+                                users_df.loc[users_df["index"] == included_author_username, [
+                                    "Retweets"]] = included_retweets
+
+                            if int(included_reply_count) > int(Replies):
+                                print(
+                                    f"Aggregated Replies updated to {included_reply_count}")
+                                users_df.loc[users_df["index"] == included_author_username, [
+                                    "Replies"]] = included_reply_count
+
+                            if int(included_impressions) > int(Impressions):
+                                print(
+                                    f"Aggregated Impressions updated to {included_impressions}")
+                                users_df.loc[users_df["index"] == included_author_username, [
+                                    "Impressions"]] = included_impressions
+
+                            print(
+                                f"User {included_author_username} already exists in table")
+
+                            if "level_0" in users_df.columns:
+                                print("DAMNIT")
+                                users_df.drop(
+                                    columns=["level_0"], inplace=True)
+
+                            users_df.to_sql(
+                                usersTable, engine, if_exists="replace", index=False)
+                    else:
+                        print("Appending to users table...")
+                        export_users_df = pd.DataFrame(index=[included_author_username], data=[[included_author_username, included_author_name, included_likes, included_retweets, included_reply_count, included_impressions]], columns=[
+                            "index", "Name", "Favorites", "Retweets", "Replies", "Impressions"])
+                        export_users_df.to_sql(
+                            usersTable, engine, if_exists="append", index=False)
+                        print("Users table appended")
+                        print("DF Users Table: ", users_df)
+                    # the index = engager user name (user who interacted with the included user)
+                    # the author = included user name (parent tweet author)
+                    # need to decide if we want to keep it that way or change it to the author username of the included user
+                    # the included user (author) has more mentions and is more likely to be the one we want to track
 
 
 def main():

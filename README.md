@@ -83,15 +83,7 @@ $ brew install python
 In pgAdmin4 or postgresql:
 
 - Create server on `localhost:5433/` with your `db name`, `username`, and `password`
-- Create table with your name as stored from the previous step
-- Create columns:
-  - `index`
-  - `author`
-  - `favorites`
-  - `retweets`
-  - `replies`
-  - `Tweet ID`
-    > all types are **primary**(_text_) or **secondary**(_bigint_)
+- Populate the metrics_table_name and aggregated_table_name with your database values in `config.yml`
 
 You can follow the pgadmin4 steps to setup your own - or you can import `df_table.csv` to your postgresql server (untested)
 
