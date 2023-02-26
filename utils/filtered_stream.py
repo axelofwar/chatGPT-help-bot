@@ -7,6 +7,7 @@ import time
 import yaml
 import stream_tools as st
 import postgres_tools as pg
+import nft_inspect_tools as nft
 
 load_dotenv()
 
@@ -302,14 +303,29 @@ def get_stream(update_flag, remove_flag):
 
                 users_df = pd.read_sql_table(usersTable, engine)
 
+                # if user is already being tracked, add them to the users table
+                members_df = nft.get_db_members_collections_stats(
+                    engine, config["collections"], usersTable)
+                print("Members DF: ", members_df)
+
+                '''
+                TODO: search this members df to determine if the user has the pfp - which should be one of the columns
+                if they do, then proceed with the if logic below
+                if they don't, don't add them to the users table
+                '''
+
                 if included_author_username in users_df["index"].values:
                     st.update_aggregated_metrics(
                         engine, included_author_username, users_df, tweets_df)
                 else:
                     # FIXED AUTHOR AND USERNAME NOT MATCHING FROM ROW 32 ON IN USERS_TABLE UNTIL RESET
                     print("Appending to users table...")
-                    export_users_df = pd.DataFrame(index=[included_author_username], data=[[included_author_username, included_author_name, included_likes, included_retweets, included_replies, included_impressions]], columns=[
-                        "index", "Name", "Favorites", "Retweets", "Replies", "Impressions"])
+                    export_users_df = pd.DataFrame(index=[included_author_username],
+                                                   data=[[included_author_username, included_author_name,
+                                                          included_likes, included_retweets, included_replies,
+                                                          included_impressions]],
+                                                   columns=["index", "Name", "Favorites",
+                                                            "Retweets", "Replies", "Impressions"])
                     export_users_df.to_sql(
                         usersTable, engine, if_exists="append", index=False)
                     print(

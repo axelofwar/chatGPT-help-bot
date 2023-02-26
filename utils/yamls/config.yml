@@ -5,10 +5,13 @@ RECONNECT_COUNT: 1
 REMOVE_RULE: ""
 UI_CHANNEL_ID: "943008506397749258"
 account_to_query: axelofwar
+aggregated_table_name: users_table
 chat_channel_id: "943011412219920415"
+collections:
+  - y00ts
+  - degods
 data_channel_id: "943008506397749258"
-db_name: "test"
-metrics_table_name: "df_table"
-aggregated_table_name: "users_table"
+db_name: test
+metrics_table_name: df_table
 timeout: 5
 tweet_history: 15
