@@ -1,5 +1,6 @@
 from time import sleep
 import postgres_tools as pg
+import stream_tools as st
 import requests
 import pandas as pd
 import yaml
@@ -101,7 +102,8 @@ def get_collection_members(engine, collection, usersTable):
         )
 
         if member_name in names:
-            print(f"Member {member_name} in database")
+            print(
+                f"Member {member_name} in users_df database - check if wearing PFP")
             members_data_frame = pd.concat(
                 [members_data_frame, member_data_frame])
 
@@ -122,6 +124,21 @@ def get_db_members_collections_stats(engine, collections, usersTable):
     return m_tot_df
 
 
+def get_wearing_list(members_df):
+    wearing_list = []
+    iter = 0
+
+    for member in members_df["Name"].values:
+        # print("Member Name :", member, "\n")
+        if members_df["Wearing PFP"].values[iter]:
+            print(
+                f"{member} pfp check successful - add/update to pfp_table", "\n")
+            wearing_list.append(member)
+        iter += 1
+    print("Wearing List: ", wearing_list)
+    return wearing_list
+
+
 '''
 The functions below are for standalone use of the nft_inspect_tools.py file
 '''
@@ -133,6 +150,8 @@ def main():
     tot_df = get_db_members_collections_stats(
         engine, config["collections"], config["aggregated_table_name"])
     remove_collection_to_track("bonkz")
+
+    get_wearing_list(tot_df)
 
 
 main()

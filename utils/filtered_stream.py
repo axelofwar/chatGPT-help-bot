@@ -49,23 +49,29 @@ with open("utils/yamls/config.yml", "r") as file:
 # To set your enviornment variables in your terminal run the following line:
     config["RECONNECT_COUNT"] = 0
 
+# Twitter API constants
 bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
+
+# Postgres constants
 engine = pg.start_db(config["db_name"])
 tweetsTable = config["metrics_table_name"]
 usersTable = config["aggregated_table_name"]
+pfpTable = config["pfp_table_name"]
 
 
 # check if tables exist and create if not
 pg.check_metrics_table(engine, tweetsTable)
 pg.check_users_table(engine, usersTable)
+pg.check_pfp_table(engine, pfpTable)
 
-
+# Init flags and empty frames for those used throughout the app
 update_flag = False
 remove_flag = False
 author = ""
 df = pd.DataFrame()
 export_df = pd.DataFrame()
 export_include_df = pd.DataFrame()
+pfp_df = pd.DataFrame()
 
 # def get_export_df():
 #     return export_include_df
@@ -80,7 +86,7 @@ def get_stream(update_flag, remove_flag):
 
     if response.status_code == 429:
         print("TOO MANY REQUESTS")
-        time.sleep(180)  # wait 3 minutes
+        time.sleep(300)  # wait 5 minutes
         # waiting only 60 seconds doesn't seem to solve the problem
         get_stream(update_flag, remove_flag)
 
@@ -119,6 +125,9 @@ def get_stream(update_flag, remove_flag):
             matching_rules = json_response["matching_rules"]
             full_text = json_response["data"]["text"]
             print("\nMATCHING RULES: ", matching_rules)
+            '''
+            We can use this matching rules object in the future to determine which project's table we should add the data to
+            '''
             print("\nTEXT: ", full_text)
 
             # TODO: if original tweet or quoted/retweeted
@@ -170,8 +179,8 @@ def get_stream(update_flag, remove_flag):
             engagement_metrics = st.get_tweet_metrics(id)
             tweet_favorite_count = int(engagement_metrics["favorite_count"])
             tweet_retweet_count = int(engagement_metrics["retweet_count"])
-            print("\nTweet Favorites: ", tweet_favorite_count)
-            print("\nTweet Retweets: ", tweet_retweet_count)
+            # print("\nTweet Favorites: ", tweet_favorite_count)
+            # print("\nTweet Retweets: ", tweet_retweet_count)
 
             # TODO: create a new table for each new rule(project?) allows by communtiy tracking
             # do we want to deploy a new instance of the app for each project?
@@ -189,7 +198,7 @@ def get_stream(update_flag, remove_flag):
             df = pd.concat([df0, df1, df2, df3], axis=1)
 
             export_df = df
-            print("\nExport_df:", export_df)
+            # print("\nExport_df:", export_df)
 
             if tweet_data["includes"] and "tweets" in tweet_data["includes"]:
                 # loop to go through all referenced/included tweets
@@ -273,8 +282,8 @@ def get_stream(update_flag, remove_flag):
                                                  included_retweets, included_replies, included_impressions)
 
                 export_include_df = df
-                print("\nExport Include DF: ", export_include_df)
-                print("\nExport DF: ", export_df)
+                # print("\nExport Include DF: ", export_include_df)
+                # print("\nExport DF: ", export_df)
 
                 # update to use non-deprecated method
                 if engine.has_table(tweetsTable) == False:
@@ -303,17 +312,7 @@ def get_stream(update_flag, remove_flag):
 
                 users_df = pd.read_sql_table(usersTable, engine)
 
-                # if user is already being tracked, add them to the users table
-                members_df = nft.get_db_members_collections_stats(
-                    engine, config["collections"], usersTable)
-                print("Members DF: ", members_df)
-
-                '''
-                TODO: search this members df to determine if the user has the pfp - which should be one of the columns
-                if they do, then proceed with the if logic below
-                if they don't, don't add them to the users table
-                '''
-
+                # if user is already being tracked, update the values in our aggregated table
                 if included_author_username in users_df["index"].values:
                     st.update_aggregated_metrics(
                         engine, included_author_username, users_df, tweets_df)
@@ -331,6 +330,50 @@ def get_stream(update_flag, remove_flag):
                     print(
                         f"New user {included_author_name} in Users table appended")
                     print("DF Users Table: ", users_df)
+
+                '''
+                DONE BELOW: search this members df to determine if the user has the pfp - which should be one of the columns
+                if they do, then search the aggregated metrics table 
+                and put their metrics into a dataframe that is appended with each member that both:
+                - has the pfp
+                - has been tracked in the aggregated metrics table
+                if they don't - don't add them to the final haspfp + tracked table
+
+                TODO: DONE - run for a period and confirm integrity 
+                '''
+
+                # if user is already being tracked, add them to the users table
+                members_df = nft.get_db_members_collections_stats(
+                    engine, config["collections"], usersTable)
+                # print("Members DF: ", members_df)
+
+                wearing_list = nft.get_wearing_list(members_df)
+                for user in wearing_list:
+                    if user in users_df["Name"].values:
+                        username = users_df.loc[users_df["Name"]
+                                                == user, "index"].values[0]
+                        agg_likes = users_df.loc[users_df["Name"]
+                                                 == user, "Favorites"].values[0]
+                        agg_retweets = users_df.loc[users_df["Name"]
+                                                    == user, "Retweets"].values[0]
+                        agg_replies = users_df.loc[users_df["Name"]
+                                                   == user, "Replies"].values[0]
+                        agg_impressions = users_df.loc[users_df["Name"]
+                                                       == user, "Impressions"].values[0]
+
+                        st.update_pfp_tracked_table(
+                            engine, pfp_df, user, username, agg_likes, agg_retweets, agg_replies, agg_impressions
+                        )
+                    else:
+                        new_pfp_user = pd.DataFrame(index=[username],
+                                                    data=[
+                                                        [username, user, agg_likes, agg_retweets, agg_replies, agg_impressions]],
+                                                    columns=["index", "Name", "Favorites",
+                                                             "Retweets", "Replies", "Impressions"])
+                        new_pfp_user.to_sql(
+                            pfpTable, engine, if_exists="append", index=False)
+
+                        print("User appended to PFP table")
 
 
 def main():

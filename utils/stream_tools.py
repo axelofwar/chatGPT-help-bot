@@ -217,7 +217,7 @@ def update_aggregated_metrics(engine, author_username, users_df, tweets_df):
             print(
                 f"{user} to aggregate found in Metrics Table")
 
-            user_rows = pg.get_user_metric_rows(
+            user_rows = pg.get_all_user_metric_rows(
                 engine, tweetsTable, author_username)
             for item in user_rows:
                 print("ROW TO AGGREGATE: ", item[0])
@@ -226,18 +226,18 @@ def update_aggregated_metrics(engine, author_username, users_df, tweets_df):
                     aggregated_retweets += int(item[3])
                     aggregated_replies += int(item[4])
                     aggregated_impressions += int(item[5])
-                    print("Aggregated Likes: ",
-                          aggregated_likes)
-                    print("Aggregated Retweets: ",
-                          aggregated_retweets)
-                    print("Aggregated Replies: ",
-                          aggregated_replies)
-                    print("Aggregated Impressions: ",
-                          aggregated_impressions)
+                    # print("Aggregated Likes: ",
+                    #       aggregated_likes)
+                    # print("Aggregated Retweets: ",
+                    #       aggregated_retweets)
+                    # print("Aggregated Replies: ",
+                    #       aggregated_replies)
+                    # print("Aggregated Impressions: ",
+                    #       aggregated_impressions)
 
                 row = users_df.loc[users_df["index"]
                                    == author_username]
-                print("Row Vals: ", row.values)
+                # print("Row Vals: ", row.values)
                 if row.empty == False:
                     row = row.values[0]
                     if len(row) > 6:
@@ -280,7 +280,7 @@ def update_tweets_table(engine, id, tweets_df, included_likes, included_retweets
     print("Updating Metrics table...")
     row = tweets_df.loc[tweets_df["Tweet ID"]
                         == id]
-    print("Row Vals: ", row.values)
+    # print("Row Vals: ", row.values)
 
     row = row.values[0]
     # print("Size row: ", len(row))
@@ -295,9 +295,9 @@ def update_tweets_table(engine, id, tweets_df, included_likes, included_retweets
     retweets = row[3]
     replies = row[4]
     impressions = row[5]
-    print("Favorites: ", favorites)
-    print("Retweets: ", retweets)
-    print("Replies: ", replies)
+    # print("Favorites: ", favorites)
+    # print("Retweets: ", retweets)
+    # print("Replies: ", replies)
 
     # update the values in the existing table
     if int(included_likes) > int(favorites):
@@ -333,9 +333,60 @@ def update_tweets_table(engine, id, tweets_df, included_likes, included_retweets
 
     # continue here
     # decide how to update only the rows that have changed
-    # then how to aggregate metrics from all tweet IDs per user/author
     # get totals of engagers vs. author and weight them accordingly
     print("User in Metrics Table updated")
+
+
+def update_pfp_tracked_table(engine, pfp_table, name, username, agg_likes, agg_retweets, agg_replies, agg_impressions):
+    pfp_table_name = config["pfp_table_name"]
+    print("Updating PFP Tracked Table...")
+    # check if the user is already in the table
+
+    if pfp_table.empty == True:
+        print("PFP Tracked Table is empty")
+        pfp_table = pd.DataFrame(index=[name],
+                                 data=[
+                                     [name, username, agg_likes, agg_retweets, agg_replies, agg_impressions]],
+                                 columns=["index", "Name", "Favorites", "Retweets", "Replies", "Impressions"])
+        # print("PFP Tracked Table created")
+        print("PFP Tracked Table Created: ", pfp_table)
+        pfp_table.to_sql(
+            pfp_table_name, engine, if_exists="replace", index=False)
+        print(f"User {name} added to PFP Tracked Table")
+    else:
+        print("PFP Tracked Table exists: ", pfp_table)
+
+    if name in pfp_table["index"].values:
+        print(f"User {name} already exists in PFP Tracked Table")
+        # update the values in the existing table
+        pfp_table.loc[pfp_table["Name"] == name, [
+            "Favorites"]] = agg_likes
+        pfp_table.loc[pfp_table["Name"] == name, [
+            "Retweets"]] = agg_retweets
+        pfp_table.loc[pfp_table["Name"] == name, [
+            "Replies"]] = agg_replies
+        pfp_table.loc[pfp_table["Name"] == name, [
+            "Impressions"]] = agg_impressions
+        pfp_table.loc[pfp_table["Name"] == name, [
+            "index"]] = username
+
+        pfp_table.to_sql(
+            pfp_table_name, engine, if_exists="replace", index=False)
+        print(
+            f"Aggregated values for {username} in PFP Tracked table updated")
+        print("DF PFP Tracked Table: ", pfp_table)
+    else:
+        print(f"User {username} does not exist in PFP Tracked Table")
+        # add the user to the table
+        pfp_table = create_dataFrame(
+            username, agg_likes, agg_retweets, agg_replies, agg_impressions)
+        pfp_table.to_sql(
+            pfp_table_name, engine, if_exists="append", index=False)
+        print(
+            f"User {username} added to PFP Tracked table")
+        print("DF PFP Tracked Table: ", pfp_table)
+
+    return pfp_table
 
 
 def create_dataFrame(id, author_username, author_name, likes, retweets, replies, impressions):

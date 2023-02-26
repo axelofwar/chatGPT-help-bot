@@ -99,9 +99,9 @@ def check_metrics_table(engine, table_name):
               Column('Tweet Id', Text),
               )
         metadata.create_all()
-        print("Table created")
+        print("Metrics Table created")
     else:
-        print("Table already exists")
+        print(f"{table_name} already exists")
 
 
 def check_users_table(engine, table_name):
@@ -116,12 +116,30 @@ def check_users_table(engine, table_name):
               Column("Retweets", Integer),
               Column("Replies", Integer),
               Column("Impressions", Integer),
-
               )
         metadata.create_all()
         print("Table created")
     else:
-        print("Table already exists")
+        print(f"{table_name} already exists")
+
+
+def check_pfp_table(engine, table_name):
+    metadata = MetaData(bind=engine)
+
+    if not engine.has_table(table_name):
+        print("Creating table...")
+        Table(table_name, metadata,
+              Column('index', Text, primary_key=True),
+              Column('Name', Text),
+              Column("Favorites", Integer),
+              Column("Retweets", Integer),
+              Column("Replies", Integer),
+              Column("Impressions", Integer),
+              )
+        metadata.create_all()
+        print("Table created")
+    else:
+        print(f"{table_name} already exists")
 
 
 def write_to_db(engine, df, table_name):
@@ -142,7 +160,7 @@ def get_admin_user(database_name):
         print(row)
 
 
-def get_user_metric_rows(engine, table_name, username):
+def get_all_user_metric_rows(engine, table_name, username):
     metadata = MetaData(bind=engine)
     table = Table(table_name, metadata, autoload=True)
     query = select([table]).where(table.columns.index == username)
