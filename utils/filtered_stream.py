@@ -36,7 +36,7 @@ Status: Working - 2023-02-23 - run the stream and store tweets matching the rule
     - if user ID is not in database, add to database
     - if user ID is in database, replace WHOLE database with users_df + updated aggregated metrics
 
-TODO: 
+TODO:
     - update to replace only the row - not the whole table with replace calls when updating metrics
     - add time based functionality that resets the db every 30 days
     - adding nft-inspect api to get pfp status and holder rank
@@ -71,7 +71,7 @@ author = ""
 df = pd.DataFrame()
 export_df = pd.DataFrame()
 export_include_df = pd.DataFrame()
-pfp_df = pd.DataFrame()
+# pfp_df = pd.DataFrame()
 
 # def get_export_df():
 #     return export_include_df
@@ -328,30 +328,44 @@ def get_stream(update_flag, remove_flag):
                     export_users_df.to_sql(
                         usersTable, engine, if_exists="append", index=False)
                     print(
-                        f"New user {included_author_name} in Users table appended")
+                        f"New user {included_author_name} in Users table appended (fs comment)")
                     print("DF Users Table: ", users_df)
 
                 '''
                 DONE BELOW: search this members df to determine if the user has the pfp - which should be one of the columns
-                if they do, then search the aggregated metrics table 
+                if they do, then search the aggregated metrics table
                 and put their metrics into a dataframe that is appended with each member that both:
                 - has the pfp
                 - has been tracked in the aggregated metrics table
                 if they don't - don't add them to the final haspfp + tracked table
 
-                TODO: DONE - run for a period and confirm integrity 
+                TODO: DONE - run for a period and confirm integrity
                 '''
 
                 # if user is already being tracked, add them to the users table
                 members_df = nft.get_db_members_collections_stats(
                     engine, config["collections"], usersTable)
-                # print("Members DF: ", members_df)
 
                 wearing_list = nft.get_wearing_list(members_df)
+
                 for user in wearing_list:
+                    # ensure we update existing tables that will be used each loop
+                    pfp_df = pd.read_sql_table(pfpTable, engine)
+                    # users_df = pd.read_sql_table(usersTable, engine)
                     if user in users_df["Name"].values:
-                        username = users_df.loc[users_df["Name"]
-                                                == user, "index"].values[0]
+                        response = requests.get(
+                            f'https://api.twitter.com/1.1/users/search.json?q={user}&count=1', auth=st.bearer_oauth)
+                        # print("USER NAME ENDPOINT RESPONSE: ", response.json())
+                        try:
+                            username = response.json()[0]["screen_name"]
+                        except:
+                            username = users_df.loc[users_df["Name"]
+                                                    == user, "index"].values[0]
+                            # this could be the engager so we need to handle this better in the case the api doesnt return data
+                            # OR we need to preserve the included_author_username in the users table
+                            # instead of the engager as the index and propogate that change throughout the code
+                            # this should help reduce api endpoint call stress as well
+
                         agg_likes = users_df.loc[users_df["Name"]
                                                  == user, "Favorites"].values[0]
                         agg_retweets = users_df.loc[users_df["Name"]
@@ -361,9 +375,12 @@ def get_stream(update_flag, remove_flag):
                         agg_impressions = users_df.loc[users_df["Name"]
                                                        == user, "Impressions"].values[0]
 
-                        st.update_pfp_tracked_table(
+                        pfp_updated_table = st.update_pfp_tracked_table(
                             engine, pfp_df, user, username, agg_likes, agg_retweets, agg_replies, agg_impressions
                         )
+                        print(
+                            f"User {user} iterated through and updated if required")
+
                     else:
                         new_pfp_user = pd.DataFrame(index=[username],
                                                     data=[
@@ -373,7 +390,10 @@ def get_stream(update_flag, remove_flag):
                         new_pfp_user.to_sql(
                             pfpTable, engine, if_exists="append", index=False)
 
-                        print("User appended to PFP table")
+                        print(
+                            f"User {user} appended to PFP table (fs comment)")
+
+            print("PFP DF UPDATED: ", pfp_df)
 
 
 def main():

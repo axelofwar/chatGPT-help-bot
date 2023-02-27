@@ -226,14 +226,6 @@ def update_aggregated_metrics(engine, author_username, users_df, tweets_df):
                     aggregated_retweets += int(item[3])
                     aggregated_replies += int(item[4])
                     aggregated_impressions += int(item[5])
-                    # print("Aggregated Likes: ",
-                    #       aggregated_likes)
-                    # print("Aggregated Retweets: ",
-                    #       aggregated_retweets)
-                    # print("Aggregated Replies: ",
-                    #       aggregated_replies)
-                    # print("Aggregated Impressions: ",
-                    #       aggregated_impressions)
 
                 row = users_df.loc[users_df["index"]
                                    == author_username]
@@ -295,9 +287,6 @@ def update_tweets_table(engine, id, tweets_df, included_likes, included_retweets
     retweets = row[3]
     replies = row[4]
     impressions = row[5]
-    # print("Favorites: ", favorites)
-    # print("Retweets: ", retweets)
-    # print("Replies: ", replies)
 
     # update the values in the existing table
     if int(included_likes) > int(favorites):
@@ -341,50 +330,59 @@ def update_pfp_tracked_table(engine, pfp_table, name, username, agg_likes, agg_r
     pfp_table_name = config["pfp_table_name"]
     print("Updating PFP Tracked Table...")
     # check if the user is already in the table
+    pfp_table = pd.read_sql_table(pfp_table_name, engine)
 
     if pfp_table.empty == True:
         print("PFP Tracked Table is empty")
-        pfp_table = pd.DataFrame(index=[name],
+        pfp_table = pd.DataFrame(index=[username],
                                  data=[
-                                     [name, username, agg_likes, agg_retweets, agg_replies, agg_impressions]],
+                                     [username, name, agg_likes, agg_retweets, agg_replies, agg_impressions]],
                                  columns=["index", "Name", "Favorites", "Retweets", "Replies", "Impressions"])
-        # print("PFP Tracked Table created")
         print("PFP Tracked Table Created: ", pfp_table)
         pfp_table.to_sql(
             pfp_table_name, engine, if_exists="replace", index=False)
         print(f"User {name} added to PFP Tracked Table")
-    else:
-        print("PFP Tracked Table exists: ", pfp_table)
 
-    if name in pfp_table["index"].values:
-        print(f"User {name} already exists in PFP Tracked Table")
-        # update the values in the existing table
-        pfp_table.loc[pfp_table["Name"] == name, [
-            "Favorites"]] = agg_likes
-        pfp_table.loc[pfp_table["Name"] == name, [
-            "Retweets"]] = agg_retweets
-        pfp_table.loc[pfp_table["Name"] == name, [
-            "Replies"]] = agg_replies
-        pfp_table.loc[pfp_table["Name"] == name, [
-            "Impressions"]] = agg_impressions
-        pfp_table.loc[pfp_table["Name"] == name, [
-            "index"]] = username
+    iter = 0
+    if username in pfp_table["index"].values:
+        # print(f"User {name} already exists in PFP Tracked Table")
+        # update the values in the existing table only if they are greater than the existing values
+        if int(agg_likes) > int(pfp_table.loc[pfp_table["index"] == username, "Favorites"].values[iter]):
+            print(f"PFP Tracked Likes updated to {agg_likes}")
+            pfp_table.loc[pfp_table["index"] == name, [
+                "Favorites"]] = agg_likes
+        if int(agg_retweets) > int(pfp_table.loc[pfp_table["index"] == username, "Retweets"].values[iter]):
+            print(
+                f"PFP Tracked Retweets updated to {agg_retweets}")
+            pfp_table.loc[pfp_table["index"] == name, [
+                "Retweets"]] = agg_retweets
+        if int(agg_replies) > int(pfp_table.loc[pfp_table["index"] == username, "Replies"].values[iter]):
+            print(
+                f"PFP Tracked Replies updated to {agg_replies}")
+            pfp_table.loc[pfp_table["index"] == name, [
+                "Replies"]] = agg_replies
+        if int(agg_impressions) > int(pfp_table.loc[pfp_table["index"] == username, "Impressions"].values[iter]):
+            print(
+                f"PFP Tracked Impressions updated to {agg_impressions}")
+            pfp_table.loc[pfp_table["index"] == username, [
+                "Impressions"]] = agg_impressions
+
+        iter += 1
 
         pfp_table.to_sql(
             pfp_table_name, engine, if_exists="replace", index=False)
-        print(
-            f"Aggregated values for {username} in PFP Tracked table updated")
-        print("DF PFP Tracked Table: ", pfp_table)
-    else:
+    # print("DF PFP Tracked Replaced Table: ", pfp_table)
+
+    if username not in pfp_table["index"].values:
         print(f"User {username} does not exist in PFP Tracked Table")
         # add the user to the table
-        pfp_table = create_dataFrame(
-            username, agg_likes, agg_retweets, agg_replies, agg_impressions)
+        pfp_table = pd.DataFrame(index=[name],
+                                 data=[[username, name, agg_likes, agg_retweets, agg_replies, agg_impressions]], columns=["index", "Name", "Favorites", "Retweets", "Replies", "Impressions"])
         pfp_table.to_sql(
             pfp_table_name, engine, if_exists="append", index=False)
         print(
             f"User {username} added to PFP Tracked table")
-        print("DF PFP Tracked Table: ", pfp_table)
+    # print("DF PFP Tracked Appended Table: ", pfp_table)
 
     return pfp_table
 

@@ -101,7 +101,7 @@ def check_metrics_table(engine, table_name):
         metadata.create_all()
         print("Metrics Table created")
     else:
-        print(f"{table_name} already exists")
+        print(f"{table_name} Table already exists")
 
 
 def check_users_table(engine, table_name):
@@ -120,7 +120,7 @@ def check_users_table(engine, table_name):
         metadata.create_all()
         print("Table created")
     else:
-        print(f"{table_name} already exists")
+        print(f"{table_name} Table already exists")
 
 
 def check_pfp_table(engine, table_name):
@@ -139,7 +139,7 @@ def check_pfp_table(engine, table_name):
         metadata.create_all()
         print("Table created")
     else:
-        print(f"{table_name} already exists")
+        print(f"{table_name} Table already exists")
 
 
 def write_to_db(engine, df, table_name):
