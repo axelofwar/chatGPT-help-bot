@@ -106,18 +106,17 @@ def get_collection_members(engine, collection, usersTable):
         member_time_with_token = member["timeWithToken"]
         member_time_with_collection = member["timeWithCollection"]
 
-        if member_name == "frankdegods.eth":
-            member_data_frame = pd.DataFrame(
-                {
-                    "Name": [member_name],
-                    "Wearing PFP": [member_wearing_pfp],
-                    "PFP URL": [member_pfp_url],
-                    "Global Reach": [member_global_reach],
-                    "Rank": [member_rank],
-                    "Time With Token": [member_time_with_token],
-                    "Time With Collection": [member_time_with_collection],
-                }
-            )
+        member_data_frame = pd.DataFrame(
+            {
+                "Name": [member_name],
+                "Wearing PFP": [member_wearing_pfp],
+                "PFP URL": [member_pfp_url],
+                "Global Reach": [member_global_reach],
+                "Rank": [member_rank],
+                "Time With Token": [member_time_with_token],
+                "Time With Collection": [member_time_with_collection],
+            }
+        )
 
         if member_name in names:
             print(

@@ -190,7 +190,7 @@ def get_all_user_metric_rows(engine, table_name, username):
     # df = fs.get_export_df()
     # print(df)
 
-    # write_to_db(engine, df, "df_table") # currently an empty frame for some reason
+    # write_to_db(engine, df, table_name'') # currently an empty frame for some reason
 
 
 # if __name__ == "__main__":

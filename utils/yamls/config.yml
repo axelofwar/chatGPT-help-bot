@@ -11,7 +11,7 @@ collections:
   - y00ts
   - degods
 data_channel_id: "943008506397749258"
-db_name: test
+db_name: community_gamification
 metrics_table_name: metrics_table
 pfp_table_name: pfp_table
 timeout: 5
