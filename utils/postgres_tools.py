@@ -43,9 +43,12 @@ POSTGRES_PORT = os.getenv("POSTGRESQL_PORT")
 with open("utils/yamls/config.yml", "r") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
+table_name = config["metrics_table_name"]
 
 # POSTGRES SUBPROCESS FUNCTIONS
 # CSV FUNCTIONS
+
+
 def write_df_to_csv(df, csv_path):
     df.to_csv(csv_path, index=False, quoting=csv.QUOTE_ALL)
 
