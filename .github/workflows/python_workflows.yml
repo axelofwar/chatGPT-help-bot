@@ -25,6 +25,6 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install pyyaml
-      - name: Build StreamTools
+      - name: Build utils/test.py
         run: |
-          python utils/stream_tools.py build
+          python test.py build

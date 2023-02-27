@@ -3,7 +3,6 @@ import os
 import requests
 import yaml
 import postgres_tools as pg
-import nft_inspect_tools as nft
 import pandas as pd
 from dotenv import load_dotenv
 if 'GITHUB_ACTION' not in os.environ:
@@ -23,8 +22,8 @@ update_flag = False
 with open("utils/yamls/config.yml", "r") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 
-# bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
-bearer_token = os.environ["TWITTER_BEARER_TOKEN"]
+bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
+# bearer_token = os.environ["TWITTER_BEARER_TOKEN"]
 tweetsTable = config["metrics_table_name"]
 usersTable = config["aggregated_table_name"]
 
@@ -408,21 +407,3 @@ def create_dataFrame(id, author_username, author_name, likes, retweets, replies,
     df = pd.concat([df0, df1, df2, df3, df4, df5], axis=1)
 
     return df
-
-
-def function():
-    included_id = "1628657154742792197"
-    data = get_data_by_id(included_id)
-
-    # print("Data: ", data)
-    public_metrics = data["data"]["public_metrics"]
-    author_id = data["data"]["author_id"]
-    author_data = get_username_by_author_id(author_id)
-    author = author_data["data"]["username"]
-
-    print("\nAuthor: ", author)
-    print("Tweet ID: ", included_id)
-    print("Public Metrics: ", public_metrics)
-
-
-function()

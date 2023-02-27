@@ -1,6 +1,7 @@
 from time import sleep
-import postgres_tools as pg
-import stream_tools as st
+# import postgres_tools as pg
+# import stream_tools as st
+
 import requests
 import pandas as pd
 import yaml
@@ -49,6 +50,22 @@ def remove_collection_to_track(collection):
     return
 
 
+def get_simple_members(collection):
+    response = requests.get(
+        f"https://www.nftinspect.xyz/api/collections/members/{collection}?limit=7500&onlyNewMembers=false"
+    )
+    if response.status_code != 200:
+        raise Exception(
+            "Cannot get user data (HTTP {}): {}".format(
+                response.status_code, response.text)
+        )
+
+    output = response.json()
+    members = output["members"]
+
+    return members
+
+
 def get_collection_members(engine, collection, usersTable):
     response = requests.get(
         f"https://www.nftinspect.xyz/api/collections/members/{collection}?limit=7500&onlyNewMembers=false"
@@ -89,17 +106,18 @@ def get_collection_members(engine, collection, usersTable):
         member_time_with_token = member["timeWithToken"]
         member_time_with_collection = member["timeWithCollection"]
 
-        member_data_frame = pd.DataFrame(
-            {
-                "Name": [member_name],
-                "Wearing PFP": [member_wearing_pfp],
-                "PFP URL": [member_pfp_url],
-                "Global Reach": [member_global_reach],
-                "Rank": [member_rank],
-                "Time With Token": [member_time_with_token],
-                "Time With Collection": [member_time_with_collection],
-            }
-        )
+        if member_name == "frankdegods.eth":
+            member_data_frame = pd.DataFrame(
+                {
+                    "Name": [member_name],
+                    "Wearing PFP": [member_wearing_pfp],
+                    "PFP URL": [member_pfp_url],
+                    "Global Reach": [member_global_reach],
+                    "Rank": [member_rank],
+                    "Time With Token": [member_time_with_token],
+                    "Time With Collection": [member_time_with_collection],
+                }
+            )
 
         if member_name in names:
             print(
@@ -148,14 +166,14 @@ The functions below are for standalone use of the nft_inspect_tools.py file
 '''
 
 
-def main():
-    engine = pg.start_db(config["db_name"])
-    add_collection_to_track("bonkz")
-    tot_df = get_db_members_collections_stats(
-        engine, config["collections"], config["aggregated_table_name"])
-    remove_collection_to_track("bonkz")
+# def main():
+#     engine = pg.start_db(config["db_name"])
+#     add_collection_to_track("bonkz")
+#     tot_df = get_db_members_collections_stats(
+#         engine, config["collections"], config["aggregated_table_name"])
+#     remove_collection_to_track("bonkz")
 
-    get_wearing_list(tot_df)
+#     get_wearing_list(tot_df)
 
 
-main()
+# main()

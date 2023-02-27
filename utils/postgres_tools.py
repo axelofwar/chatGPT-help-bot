@@ -31,14 +31,14 @@ TODO: add functions for adding columns to the table if they don't exist:
 
 # POSTGRES CONFIG
 POSTGRES_ADMIN_USER = "postgres"
-# POSTGRES_USER = os.getenv("POSTGRES_USERNAME")
-POSTGRES_USER = os.environ["POSTGRES_USERNAME"]
-# POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-POSTGRES_PASSWORD = os.environ["POSTGRES_PASSWORD"]
-# POSTGRES_HOST = os.getenv("POSTGRESQL_HOST")
-POSTGRES_HOST = os.environ["POSTGRESQL_HOST"]
-# POSTGRES_PORT = os.getenv("POSTGRESQL_PORT")
-POSTGRES_PORT = os.environ["POSTGRESQL_PORT"]
+POSTGRES_USER = os.getenv("POSTGRES_USERNAME")
+# POSTGRES_USER = os.environ["POSTGRES_USERNAME"]
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+# POSTGRES_PASSWORD = os.environ["POSTGRES_PASSWORD"]
+POSTGRES_HOST = os.getenv("POSTGRESQL_HOST")
+# POSTGRES_HOST = os.environ["POSTGRESQL_HOST"]
+POSTGRES_PORT = os.getenv("POSTGRESQL_PORT")
+# POSTGRES_PORT = os.environ["POSTGRESQL_PORT"]
 
 with open("utils/yamls/config.yml", "r") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
