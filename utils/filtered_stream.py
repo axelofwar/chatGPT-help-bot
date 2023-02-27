@@ -9,7 +9,8 @@ import stream_tools as st
 import postgres_tools as pg
 import nft_inspect_tools as nft
 
-load_dotenv()
+if 'GITHUB_ACTION' not in os.environ:
+    load_dotenv()
 
 '''
 This is app for the filtered twitter stream - contains functions for:
@@ -50,8 +51,8 @@ with open("utils/yamls/config.yml", "r") as file:
     config["RECONNECT_COUNT"] = 0
 
 # Twitter API constants
-bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
-
+# bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
+# bearer_token = os.environ["TWITTER_BEARER_TOKEN"]
 # Postgres constants
 engine = pg.start_db(config["db_name"])
 tweetsTable = config["metrics_table_name"]

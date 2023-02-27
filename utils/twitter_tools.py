@@ -20,9 +20,9 @@ running = True
 # INITIALIZE TWITTER API
 async def init_twitter():
     auth = tweepy.OAuthHandler(
-        os.getenv("TWITTER_API_KEY"), os.getenv("TWITTER_API_SECRET_KEY"))
-    auth.set_access_token(os.getenv("TWITTER_ACCESS_TOKEN"),
-                          os.getenv("TWITTER_ACCESS_TOKEN_SECRET"))
+        os.environ("TWITTER_API_KEY"), os.environ("TWITTER_API_SECRET_KEY"))
+    auth.set_access_token(os.environ("TWITTER_ACCESS_TOKEN"),
+                          os.environ("TWITTER_ACCESS_TOKEN_SECRET"))
     api = tweepy.API(auth)
     print("TWITTER API INITIALIZED")
     return api

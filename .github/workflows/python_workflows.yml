@@ -1,0 +1,30 @@
+name: Python Build
+on:
+  push:
+env:
+  POSTGRESQL_HOST: ${{ secrets.POSTGRESQL_HOST }}
+  POSTGRESQL_PORT: ${{ secrets.POSTGRESQL_PORT }}
+  POSTGRES_USERNAME: ${{ secrets.POSTGRES_USERNAME }}
+  POSTGRES_PASSWORD: ${{ secrets.POSTGRESQL_PASSWORD }}
+  bearer_token: ${{ secrets.TWITTER_BEARER_TOKEN }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyyaml
+      - name: Build StreamTools
+        run: |
+          python utils/stream_tools.py build
