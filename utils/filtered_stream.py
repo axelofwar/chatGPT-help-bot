@@ -351,13 +351,41 @@ def get_stream(update_flag, remove_flag):
                 for user in wearing_list:
                     # ensure we update existing tables that will be used each loop
                     pfp_df = pd.read_sql_table(pfpTable, engine)
-                    # users_df = pd.read_sql_table(usersTable, engine)
+                    users_df = pd.read_sql_table(usersTable, engine)
+
+                    # row = pfp_df.loc[pfp_df["Name"] == user]
+                    # print("ROW: ", row)
+                    try:
+                        likes = pfp_df.loc[pfp_df["Name"]
+                                           == user, "Favorites"].values[0]
+                        retweets = pfp_df.loc[pfp_df["Name"]
+                                              == user, "Retweets"].values[0]
+                        replies = pfp_df.loc[pfp_df["Name"]
+                                             == user, "Replies"].values[0]
+                        impressions = pfp_df.loc[pfp_df["Name"]
+                                                 == user, "Impressions"].values[0]
+                    except:
+                        likes = 0
+                        retweets = 0
+                        replies = 0
+                        impressions = 0
+
                     if user in users_df["Name"].values:
-                        response = requests.get(
-                            f'https://api.twitter.com/1.1/users/search.json?q={user}&count=1', auth=st.bearer_oauth)
                         # print("USER NAME ENDPOINT RESPONSE: ", response.json())
                         try:
+                            response = requests.get(
+                                f'https://api.twitter.com/1.1/users/search.json?q={user}&count=1', auth=st.bearer_oauth)
+
                             username = response.json()[0]["screen_name"]
+                            if response.status_code != 200:
+                                print("User name endpoint failed")
+                                print(response.json())
+                                print(response.text)
+                            if response.text == "ERROR":
+                                username = users_df.loc[users_df["Name"]
+                                                        == user, "index"].values[0]
+                            pass
+                            # continue
                         except:
                             username = users_df.loc[users_df["Name"]
                                                     == user, "index"].values[0]
@@ -375,11 +403,13 @@ def get_stream(update_flag, remove_flag):
                         agg_impressions = users_df.loc[users_df["Name"]
                                                        == user, "Impressions"].values[0]
 
-                        pfp_updated_table = st.update_pfp_tracked_table(
-                            engine, pfp_df, user, username, agg_likes, agg_retweets, agg_replies, agg_impressions
-                        )
-                        print(
-                            f"User {user} iterated through and updated if required")
+                        if likes < agg_likes or retweets < agg_retweets or replies < agg_replies or impressions < agg_impressions:
+                            print("Updating PFP table...")
+                            pfp_updated_table = st.update_pfp_tracked_table(
+                                engine, pfp_df, user, username, agg_likes, agg_retweets, agg_replies, agg_impressions
+                            )
+                            print(
+                                f"User {user} iterated through and updated if required")
 
                     else:
                         new_pfp_user = pd.DataFrame(index=[username],
@@ -393,7 +423,7 @@ def get_stream(update_flag, remove_flag):
                         print(
                             f"User {user} appended to PFP table (fs comment)")
 
-            print("PFP DF UPDATED: ", pfp_df)
+                print("PFP DF UPDATED: ", pfp_df)
 
 
 def main():

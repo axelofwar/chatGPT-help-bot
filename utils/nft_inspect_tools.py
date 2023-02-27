@@ -130,10 +130,14 @@ def get_wearing_list(members_df):
 
     for member in members_df["Name"].values:
         # print("Member Name :", member, "\n")
-        if members_df["Wearing PFP"].values[iter]:
+        print("Member Wearing PFP :", members_df["Wearing PFP"].values[iter],
+              "\n")
+        if members_df["Wearing PFP"].values[iter] > 0:
             print(
                 f"{member} pfp check successful - add/update to pfp_table", "\n")
             wearing_list.append(member)
+        else:
+            print(f"{member} pfp check failed - skip", "\n")
         iter += 1
     print("Wearing List: ", wearing_list)
     return wearing_list
