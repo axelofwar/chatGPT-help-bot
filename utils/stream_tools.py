@@ -223,11 +223,22 @@ def update_aggregated_metrics(engine, author_username, users_df, tweets_df):
                 engine, tweetsTable, author_username)
             for item in user_rows:
                 print("ROW TO AGGREGATE: ", item[0])
+                # potential error here if item is None
                 if item != None:
                     aggregated_likes += int(item[2])
+                    print("AGGREGATED LIKES: ", aggregated_likes)
                     aggregated_retweets += int(item[3])
+                    print("AGGREGATED RETWEETS: ", aggregated_retweets)
                     aggregated_replies += int(item[4])
-                    aggregated_impressions += int(item[5])
+                    print("AGGREGATED REPLIES: ", aggregated_replies)
+                    try:
+                        aggregated_impressions += int(item[5])
+                        print("AGGREGATED IMPRESSIONS: ",
+                              aggregated_impressions)
+                    except:
+                        print("NO IMPRESSIONS TO AGGREGATE")
+                        aggregated_impressions = users_df.loc[users_df["index"]
+                                                              == author_username]["Impressions"].values[0]
 
                 row = users_df.loc[users_df["index"]
                                    == author_username]
