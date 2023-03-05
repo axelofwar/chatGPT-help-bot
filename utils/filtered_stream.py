@@ -187,6 +187,7 @@ def get_stream(update_flag, remove_flag):
             # do we want to deploy a new instance of the app for each project?
             # or do we want to have a single instance of the app that can track multiple projects?
 
+            # TODO: index by tweetID on metrics table instead of author username in order to prevent duplicate rows
             authors_index = [author_username]
             df0 = pd.DataFrame(
                 index=authors_index, data=author_name, columns=["Author"])
@@ -298,6 +299,13 @@ def get_stream(update_flag, remove_flag):
                     # if tweet is already being tracked, update the values
                     # need to add another table that aggregates the values by user in this table
                     # that aggregated table will be what is used to make metrics based decisions
+                    if engine.has_table(tweetsTable) == True and tweets_df.empty:
+                        print("Table exists but is empty. Appending data...")
+                        export_include_df.to_sql(
+                            tweetsTable, engine, if_exists="append")
+                        print("Data appended to table")
+
+                    tweets_df = pd.read_sql_table(tweetsTable, engine)
                     if included_id in tweets_df["Tweet ID"].values:
                         st.update_tweets_table(engine, included_id, tweets_df, included_likes,
                                                included_retweets, included_replies, included_impressions)
@@ -306,12 +314,25 @@ def get_stream(update_flag, remove_flag):
                         export_include_df.to_sql(
                             tweetsTable, engine, if_exists="append")
                         print("New user in Metrics Table appended")
+                    # except:
 
                 # read the table post changes
                 tweets_df = pd.read_sql_table(tweetsTable, engine)
                 print("DF Metrics Table: ", tweets_df)
 
                 users_df = pd.read_sql_table(usersTable, engine)
+
+                if users_df.empty:
+                    print("Users table exists but is empty. Appending data...")
+                    export_users_df = pd.DataFrame(index=[included_author_username],
+                                                   data=[[included_author_username, included_author_name,
+                                                          included_likes, included_retweets, included_replies,
+                                                          included_impressions]],
+                                                   columns=["index", "Name", "Favorites",
+                                                            "Retweets", "Replies", "Impressions"])
+                    export_users_df.to_sql(
+                        usersTable, engine, if_exists="append", index=False)
+                    print("Data appended to table")
 
                 # if user is already being tracked, update the values in our aggregated table
                 if included_author_username in users_df["index"].values:
@@ -331,23 +352,38 @@ def get_stream(update_flag, remove_flag):
                     print(
                         f"New user {included_author_name} in Users table appended (fs comment)")
                     print("DF Users Table: ", users_df)
+                    if users_df.empty == True:
+                        print("Users table is empty, appending...")
+                        export_users_df.to_sql(
+                            usersTable, engine, if_exists="append")
+                        print("Table appended")
 
                 '''
-                DONE BELOW: search this members df to determine if the user has the pfp - which should be one of the columns
+                DONE: search this members df to determine if the user has the pfp - which should be one of the columns
                 if they do, then search the aggregated metrics table
                 and put their metrics into a dataframe that is appended with each member that both:
                 - has the pfp
                 - has been tracked in the aggregated metrics table
                 if they don't - don't add them to the final haspfp + tracked table
 
-                TODO: DONE - run for a period and confirm integrity
+                TODO: determine what we want to do with rank and reach stats
+                - do we want to add them to the pfp table?
+                These are stored in lists and each index corresponds to the same 
+                index in the wearing_list - so we can use that to match the user
+                to their rank and reach and add them to the pfp table
                 '''
 
                 # if user is already being tracked, add them to the users table
                 members_df = nft.get_db_members_collections_stats(
                     engine, config["collections"], usersTable)
 
-                wearing_list = nft.get_wearing_list(members_df)
+                # print("MEMBERS DF: ", members_df)
+                # members_df.to_csv("outputs/current_member.csv")
+
+                wearing_list, rank_list, global_reach_list = nft.get_wearing_list(
+                    members_df)
+
+                # we can create and idx and add the user's rank and reach to pfp_df
 
                 for user in wearing_list:
                     # ensure we update existing tables that will be used each loop
@@ -423,8 +459,8 @@ def get_stream(update_flag, remove_flag):
 
                         print(
                             f"User {user} appended to PFP table (fs comment)")
-
-                print("PFP DF UPDATED: ", pfp_df)
+                if wearing_list != []:
+                    print("PFP DF UPDATED: ", pfp_df)
 
 
 def main():

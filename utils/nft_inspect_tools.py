@@ -62,6 +62,12 @@ def get_simple_members(collection):
 
     output = response.json()
     members = output["members"]
+    for member in members:
+        name = member["name"]
+        rank = member["rank"]
+        reach = member["globalReach"]
+
+        print(f"Member {name} has rank: {rank} and global reach: {reach}")
 
     return members
 
@@ -78,6 +84,7 @@ def get_collection_members(engine, collection, usersTable):
 
     output = response.json()
     members = output["members"]
+    # ranks = output["rank"]
 
     members_data_frame = pd.DataFrame(
         {
@@ -97,7 +104,6 @@ def get_collection_members(engine, collection, usersTable):
         names.append(name)
 
     for member in members:
-        # print("Member :", member, "\n")
         member_name = member["name"]
         member_wearing_pfp = member["isWearingCollectionsPfp"]
         member_pfp_url = member["pfpUrl"]
@@ -143,7 +149,10 @@ def get_db_members_collections_stats(engine, collections, usersTable):
 
 def get_wearing_list(members_df):
     wearing_list = []
+    rank_list, global_reach_list = [], []
     iter = 0
+
+    print("MEMBERS DF: ", members_df, "/n")
 
     for member in members_df["Name"].values:
         # print("Member Name :", member, "\n")
@@ -153,11 +162,17 @@ def get_wearing_list(members_df):
             print(
                 f"{member} pfp check successful - add/update to pfp_table", "\n")
             wearing_list.append(member)
+            rank_list.append(members_df["Rank"].values[iter])
+            print("Rank :", members_df["Rank"].values[iter], "\n")
+            global_reach_list.append(
+                members_df["Global Reach"].values[iter]*100)
+            print("Global Reach % :", members_df["Global Reach"].values[iter]*100,
+                  "\n")
         else:
             print(f"{member} pfp check failed - skip", "\n")
         iter += 1
     print("Wearing List: ", wearing_list)
-    return wearing_list
+    return wearing_list, rank_list, global_reach_list
 
 
 '''
@@ -166,13 +181,14 @@ The functions below are for standalone use of the nft_inspect_tools.py file
 
 
 # def main():
-#     engine = pg.start_db(config["db_name"])
-#     add_collection_to_track("bonkz")
-#     tot_df = get_db_members_collections_stats(
-#         engine, config["collections"], config["aggregated_table_name"])
-#     remove_collection_to_track("bonkz")
+#     get_simple_members("y00ts")
+# #     engine = pg.start_db(config["db_name"])
+# #     add_collection_to_track("bonkz")
+# #     tot_df = get_db_members_collections_stats(
+# #         engine, config["collections"], config["aggregated_table_name"])
+# #     remove_collection_to_track("bonkz")
 
-#     get_wearing_list(tot_df)
+# #     get_wearing_list(tot_df)
 
 
 # main()

@@ -31,14 +31,21 @@ TODO: add functions for adding columns to the table if they don't exist:
 
 # POSTGRES CONFIG
 POSTGRES_ADMIN_USER = "postgres"
-POSTGRES_USER = os.getenv("POSTGRES_USERNAME")
-# POSTGRES_USER = os.environ["POSTGRES_USERNAME"]
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-# POSTGRES_PASSWORD = os.environ["POSTGRES_PASSWORD"]
-POSTGRES_HOST = os.getenv("POSTGRESQL_HOST")
-# POSTGRES_HOST = os.environ["POSTGRESQL_HOST"]
-POSTGRES_PORT = os.getenv("POSTGRESQL_PORT")
-# POSTGRES_PORT = os.environ["POSTGRESQL_PORT"]
+# POSTGRES_USER = os.getenv("POSTGRES_USERNAME")  # github actions
+# POSTGRES_USER = os.environ["POSTGRES_USERNAME"] # for local testing
+POSTGRES_USER = os.getenv("RENDER_USERNAME")  # render database
+
+# POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")  # github actions
+# POSTGRES_PASSWORD = os.environ["POSTGRES_PASSWORD"] # for local testing
+POSTGRES_PASSWORD = os.getenv("RENDER_PASSWORD")  # render database
+
+# POSTGRES_HOST = os.getenv("POSTGRESQL_HOST")  # github actions
+# POSTGRES_HOST = os.environ["POSTGRESQL_HOST"] # for local testing
+POSTGRES_HOST = os.getenv("RENDER_HOST")  # render database
+
+# POSTGRES_PORT = os.getenv("POSTGRESQL_PORT")  # github actions
+# POSTGRES_PORT = os.environ["POSTGRESQL_PORT"] # for local testing
+POSTGRES_PORT = os.getenv("RENDER_PORT")  # render database
 
 with open("utils/yamls/config.yml", "r") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
@@ -98,13 +105,13 @@ def check_metrics_table(engine, table_name):
     if not engine.has_table(table_name):
         print("Creating table...")
         Table(table_name, metadata,
-              Column('index', Text, primary_key=True),
+              Column('index', Text),
               Column('Author', Text),
               Column('Favorites', Integer),
               Column('Retweets', Integer),
               Column('Replies', Integer),
               Column('Impressions', Integer),
-              Column('Tweet Id', Text),
+              Column('Tweet ID', Text),
               )
         metadata.create_all()
         print("Metrics Table created")
@@ -118,7 +125,7 @@ def check_users_table(engine, table_name):
     if not engine.has_table(table_name):
         print("Creating table...")
         Table(table_name, metadata,
-              Column('index', Text, primary_key=True),
+              Column('index', Text),
               Column('Name', Text),
               Column('Favorites', Integer),
               Column("Retweets", Integer),
@@ -137,7 +144,7 @@ def check_pfp_table(engine, table_name):
     if not engine.has_table(table_name):
         print("Creating table...")
         Table(table_name, metadata,
-              Column('index', Text, primary_key=True),
+              Column('index', Text),
               Column('Name', Text),
               Column("Favorites", Integer),
               Column("Retweets", Integer),
