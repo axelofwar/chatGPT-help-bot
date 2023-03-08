@@ -1,6 +1,17 @@
 from django.db import models
 
-# Create your models here.
+'''
+Models are the single, definitive source of information about your data.
+They contain the essential fields and behaviors of the data you’re storing.
+Generally, each model maps to a single database table.
+
+This is the model for the pfp_table - contains functions for:
+    - Tweet = pfp_table
+TODO:
+    - Add more models for other tables
+    - Add models for viewing a specific user's data(?)
+    - Change model names from Tweet to PFP_Table and propagate changes
+'''
 
 
 class Tweet(models.Model):
