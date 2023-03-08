@@ -1,4 +1,5 @@
 import os
+import yaml
 import pandas as pd
 import postgres_tools as pg
 from dotenv import load_dotenv
@@ -17,6 +18,11 @@ For use -> change # test data to the data you want to test against the db
 bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
 engine = pg.start_db("test")
 
+with open("utils/yamls/config.yml", "r") as f:
+    config = yaml.load(f, Loader=yaml.FullLoader)
+
+table_name = config["metrics_table_name"]
+
 # test data
 included_id = "1628657154742792197"
 included_likes = 36
@@ -25,7 +31,7 @@ included_reply_count = 7
 
 
 def main():
-    existing_df = pd.read_sql_table("df_table", engine)
+    existing_df = pd.read_sql_table(table_name, engine)
     indexes = existing_df.index.values
     print("Indexes: ", indexes)
     print("FIRST READ DF: ", existing_df)
@@ -34,7 +40,7 @@ def main():
     if len(existing_df.columns) > 6:
         existing_df.drop("level_0", axis=1, inplace=True)
         print("Dropped it")
-        existing_df.to_sql("df_table", engine, if_exists="replace")
+        existing_df.to_sql(table_name, engine, if_exists="replace")
         print("Replaced it")
         print("New columns: ", existing_df.columns)
     if included_id in existing_df["Tweet ID"].values:
@@ -68,8 +74,8 @@ def main():
 
         # rework this to write only the updated values - not rewrite the whole table
         existing_df.to_sql(
-            "df_table", engine, if_exists="replace", index=False)
-        existing_df = pd.read_sql_table("df_table", engine)
+            table_name, engine, if_exists="replace", index=False)
+        existing_df = pd.read_sql_table(table_name, engine)
         print("POST WRITE:", existing_df)
 
     else:

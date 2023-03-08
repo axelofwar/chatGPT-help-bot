@@ -53,7 +53,7 @@ $ brew install python
 
 10. Add your [Discord token](https://discord.com/developers/applications) to the `.env` file
 
-11. Add your [postgresql](https://www.postgresql.org/) credentials (use [pgAdmin4](https://www.pgadmin.org/) for gui db interaction) to the `.env` file.
+11. Add your [postgresql](https://www.postgresql.org/) credentials (use [pgAdmin4](https://www.pgadmin.org/) for gui db interaction) to the `.env` file. Also add the RENDER credentials where applicable for the database hosted non-locally
     > - `POSTGRESQL_HOST` -> localhost currently fine to leave
     > - `POSTGRESQL_PORT` -> 5433 currently fine to leave (5432 = postgres def)
 

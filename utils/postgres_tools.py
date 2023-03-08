@@ -7,7 +7,8 @@ import subprocess
 # import filtered_stream as fs
 from sqlalchemy import create_engine, Table, Column, Integer, Text, MetaData, select
 from dotenv import load_dotenv
-load_dotenv()
+if 'GITHUB_ACTION' not in os.environ:
+    load_dotenv()
 
 '''
 Tools for interacting with postgresql databases - contains functions for:
@@ -30,17 +31,31 @@ TODO: add functions for adding columns to the table if they don't exist:
 
 # POSTGRES CONFIG
 POSTGRES_ADMIN_USER = "postgres"
-POSTGRES_USER = os.getenv("POSTGRES_USERNAME")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-POSTGRES_HOST = os.getenv("POSTGRESQL_HOST")
-POSTGRES_PORT = os.getenv("POSTGRESQL_PORT")
+# POSTGRES_USER = os.getenv("POSTGRES_USERNAME")  # github actions
+# POSTGRES_USER = os.environ["POSTGRES_USERNAME"] # for local testing
+POSTGRES_USER = os.getenv("RENDER_USERNAME")  # render database
+
+# POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")  # github actions
+# POSTGRES_PASSWORD = os.environ["POSTGRES_PASSWORD"] # for local testing
+POSTGRES_PASSWORD = os.getenv("RENDER_PASSWORD")  # render database
+
+# POSTGRES_HOST = os.getenv("POSTGRESQL_HOST")  # github actions
+# POSTGRES_HOST = os.environ["POSTGRESQL_HOST"] # for local testing
+POSTGRES_HOST = os.getenv("RENDER_HOST")  # render database
+
+# POSTGRES_PORT = os.getenv("POSTGRESQL_PORT")  # github actions
+# POSTGRES_PORT = os.environ["POSTGRESQL_PORT"] # for local testing
+POSTGRES_PORT = os.getenv("RENDER_PORT")  # render database
 
 with open("utils/yamls/config.yml", "r") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
+table_name = config["metrics_table_name"]
 
 # POSTGRES SUBPROCESS FUNCTIONS
 # CSV FUNCTIONS
+
+
 def write_df_to_csv(df, csv_path):
     df.to_csv(csv_path, index=False, quoting=csv.QUOTE_ALL)
 
@@ -90,18 +105,18 @@ def check_metrics_table(engine, table_name):
     if not engine.has_table(table_name):
         print("Creating table...")
         Table(table_name, metadata,
-              Column('index', Text, primary_key=True),
+              Column('index', Text),
               Column('Author', Text),
               Column('Favorites', Integer),
               Column('Retweets', Integer),
               Column('Replies', Integer),
               Column('Impressions', Integer),
-              Column('Tweet Id', Text),
+              Column('Tweet ID', Text),
               )
         metadata.create_all()
-        print("Table created")
+        print("Metrics Table created")
     else:
-        print("Table already exists")
+        print(f"{table_name} Table already exists")
 
 
 def check_users_table(engine, table_name):
@@ -110,18 +125,36 @@ def check_users_table(engine, table_name):
     if not engine.has_table(table_name):
         print("Creating table...")
         Table(table_name, metadata,
-              Column('index', Text, primary_key=True),
+              Column('index', Text),
               Column('Name', Text),
               Column('Favorites', Integer),
               Column("Retweets", Integer),
               Column("Replies", Integer),
               Column("Impressions", Integer),
-
               )
         metadata.create_all()
         print("Table created")
     else:
-        print("Table already exists")
+        print(f"{table_name} Table already exists")
+
+
+def check_pfp_table(engine, table_name):
+    metadata = MetaData(bind=engine)
+
+    if not engine.has_table(table_name):
+        print("Creating table...")
+        Table(table_name, metadata,
+              Column('index', Text),
+              Column('Name', Text),
+              Column("Favorites", Integer),
+              Column("Retweets", Integer),
+              Column("Replies", Integer),
+              Column("Impressions", Integer),
+              )
+        metadata.create_all()
+        print("Table created")
+    else:
+        print(f"{table_name} Table already exists")
 
 
 def write_to_db(engine, df, table_name):
@@ -142,7 +175,7 @@ def get_admin_user(database_name):
         print(row)
 
 
-def get_user_metric_rows(engine, table_name, username):
+def get_all_user_metric_rows(engine, table_name, username):
     metadata = MetaData(bind=engine)
     table = Table(table_name, metadata, autoload=True)
     query = select([table]).where(table.columns.index == username)
@@ -164,7 +197,7 @@ def get_user_metric_rows(engine, table_name, username):
     # df = fs.get_export_df()
     # print(df)
 
-    # write_to_db(engine, df, "df_table") # currently an empty frame for some reason
+    # write_to_db(engine, df, table_name'') # currently an empty frame for some reason
 
 
 # if __name__ == "__main__":

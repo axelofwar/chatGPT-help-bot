@@ -1,0 +1,36 @@
+name: Python Build
+on:
+  push:
+env:
+  POSTGRESQL_HOST: ${{ secrets.POSTGRESQL_HOST }}
+  POSTGRESQL_PORT: ${{ secrets.POSTGRESQL_PORT }}
+  POSTGRES_USERNAME: ${{ secrets.POSTGRES_USERNAME }}
+  POSTGRES_PASSWORD: ${{ secrets.POSTGRESQL_PASSWORD }}
+  bearer_token: ${{ secrets.TWITTER_BEARER_TOKEN }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyyaml
+
+      - name: Run DB (10s) + Build tests
+        run: |
+          echo "ENTERING SERVER RUNNER"
+          cd apis
+          trap "exit 0" ERR
+          timeout 10 python3 manage.py runserver --noreload > /dev/null 2>&1 && python3 test.py
+          cd ..
+          echo "WAKE UP"

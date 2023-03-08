@@ -1,7 +1,9 @@
 import tkinter as tk
 import yaml
-from utils import twitter_tools as th
-
+import twitter_tools as th
+import requests
+import asyncio
+import json
 '''
 UI for user to input channel ID and history days - this contains functions for:
     - making the window
@@ -12,9 +14,11 @@ UI for user to input channel ID and history days - this contains functions for:
     
 This interacts with the config file for the channel ID and history days in default cases
 '''
+with open("utils/yamls/config.yml", "r") as f:
+    config = yaml.load(f, Loader=yaml.FullLoader)
 
 
-class UI:
+class gpt_UI:
     file = open("utils/yamls/config.yml", "r+")
     config = yaml.load(file, Loader=yaml.FullLoader)
 
@@ -101,9 +105,96 @@ class UI:
         self.window.destroy()
 
 
-async def main():
-    ui = UI()
+class leaderboard_UI:
+    def __init__(self):
+        self.database_api = config["DATABASE_API"]
+
+    def make_window(self):
+        self.window = tk.Tk()
+
+        self.data = self.get_data()
+
+        self.text = tk.Text(self.window, height=10, width=50)
+        self.text.pack(fill="both", expand=True)
+
+        formatted_data = json.dumps(self.data, indent=4)
+        self.text.insert("1.0", formatted_data)
+
+        self.window.title("Leaderboard")
+        self.window.configure(background="white")
+
+        headers = ["Index", "Name", "Favorites",
+                   "Retweets", "Replies", "Impressions"]
+
+        # table = tk.Frame(self.window)
+        # table.pack(padx=10, pady=10)
+
+        # for i, header in enumerate(headers):
+        #     header_label = tk.Label(table, text=header, font=(
+        #         "Arial", 12, "bold"), padx=10, pady=5)
+        #     header_label.grid(row=0, column=i)
+        #     print("Header: " + header)
+
+        # for i, row in enumerate(self.data):
+        #     index_label = tk.Label(table, text=row["index"], font=(
+        #         "Arial", 12), padx=10, pady=5)
+        #     index_label.grid(row=i+1, column=0)
+        #     name_label = tk.Label(table, text=row["Name"], font=(
+        #         "Arial", 12), padx=10, pady=5)
+        #     name_label.grid(row=i+1, column=1)
+        #     favorites_label = tk.Label(
+        #         table, text=row["Favorites"], font=("Arial", 12), padx=10, pady=5)
+        #     favorites_label.grid(row=i+1, column=2)
+        #     retweets_label = tk.Label(
+        #         table, text=row["Retweets"], font=("Arial", 12), padx=10, pady=5)
+        #     retweets_label.grid(row=i+1, column=3)
+        #     replies_label = tk.Label(
+        #         table, text=row["Replies"], font=("Arial", 12), padx=10, pady=5)
+        #     replies_label.grid(row=i+1, column=4)
+        #     impressions_label = tk.Label(
+        #         table, text=row["Impressions"], font=("Arial", 12), padx=10, pady=5)
+        #     impressions_label.grid(row=i+1, column=5)
+
+        stop_button = tk.Button(
+            self.window, text="Stop", command=self.stop)
+        stop_button.grid(row=1, column=0)
+        stop_button.pack()
+
+    def get_data(self):
+        response = requests.get(self.database_api)
+        data = response.json()
+        return data
+
+    def close_window(self):
+        self.window.destroy()
+        return "Destroyed"
+
+    def stop(self):
+        self.close_window()
+        print("STOPPED")
+
+        # resize and center UI window
+        # screen_width = self.window.winfo_screenwidth()
+        # screen_height = self.window.winfo_screenheight()
+        # width = 200
+        # height = 200
+
+        # x = (screen_width / 2) - (width / 2)
+        # y = (screen_height / 2) - (height / 2)
+
+        # self.window.geometry("%dx%d+%d+%d" % (width, height, x, y))
+
+
+# async def main():
+def main():
+    # ui = gpt_UI()
+    ui = leaderboard_UI()
     ui.make_window()
     ui.window.mainloop()
-    channel_id, history, cancelFlag = ui.get_result()
-    return channel_id, history, cancelFlag
+    # channel_id, history, cancelFlag = ui.get_result()
+    # return channel_id, history, cancelFlag
+    return "DONE"
+
+
+# asyncio.run(main())
+main()
