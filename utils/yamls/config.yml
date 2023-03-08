@@ -1,7 +1,5 @@
 ADD_RULE: ""
 ADD_TAG: config-rule
-OPENAI_ENDPOINT: https://api.openai.com/v1
-DATABASE_API: "http://localhost:8000/api/Tweet/"
 RECONNECT_COUNT: 1
 REMOVE_RULE: ""
 UI_CHANNEL_ID: "943008506397749258"

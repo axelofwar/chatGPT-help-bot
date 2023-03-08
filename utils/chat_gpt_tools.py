@@ -12,15 +12,13 @@ Tools for interacting with the OpenAI API - contains functions for:
     - Getting the response from the Chat GPT API
 '''
 
-with open("utils/yamls/config.yml", "r") as file:
-    config = yaml.load(file, Loader=yaml.FullLoader)
-
+# LOAD PARAMETERS
 with open("utils/yamls/params.yml", "r") as paramFile:
     params = yaml.load(paramFile, Loader=yaml.FullLoader)
 
 
 # POPULATE OPENAI PARAMETERS
-openai.api_endpoint = config["OPENAI_ENDPOINT"]
+openai.api_endpoint = params["openai_endpoint"]
 
 openai.api_key = os.environ['OPENAI_API_KEY']
 if not openai.api_key:

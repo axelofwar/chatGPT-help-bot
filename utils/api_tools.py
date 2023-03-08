@@ -19,11 +19,11 @@ TODO:
     - change api endpoint name from api/Tweet to api/PFP_Table
 '''
 
-with open("utils/yamls/config.yml", "r") as f:
-    config = yaml.load(f, Loader=yaml.FullLoader)
+# LOAD AND SET PARAMS
+with open("utils/yamls/params.yml", "r") as f:
+    params = yaml.load(f, Loader=yaml.FullLoader)
 
-# database_api = os.getenv("DATABASE_API")
-database_api = config["DATABASE_API"]
+database_api = "https://"+params["host"]+params["database_api"]
 
 
 def get_pfp_table():

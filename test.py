@@ -4,18 +4,21 @@ import os
 import requests
 import yaml
 
-with open("utils/yamls/config.yml", "r") as f:
-    config = yaml.load(f, Loader=yaml.FullLoader)
-
-
-def get_db_data():
-    response = requests.get(config["DATABASE_API"])
-    data = response.json()
-    return data
+with open("utils/yamls/params.yml", "r") as f:
+    params = yaml.load(f, Loader=yaml.FullLoader)
 
 
 def test_function():
-    pfp_table_data = get_db_data()
+    '''
+    Test with our database api to get the pfp_table
+    this currently returns connection errors becuase
+    db is deployed to localhost
+    '''
+    database_api = "https://"+params["host"]+params["database_api"]
+
+    response = requests.get(database_api)
+    pfp_table_data = response.json()
+
     test_members = nft.get_simple_members("y00ts")
     '''
     Test with nft inspect api for git action because it
