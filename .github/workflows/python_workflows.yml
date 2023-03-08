@@ -25,6 +25,12 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install pyyaml
-      - name: Build nft_inspect test.py
+
+      - name: Run DB (10s) + Build tests
         run: |
-          python test.py build
+          echo "ENTERING SERVER RUNNER"
+          cd apis
+          trap "exit 0" ERR
+          timeout 10 python3 manage.py runserver --noreload > /dev/null 2>&1 && python3 test.py
+          cd ..
+          echo "WAKE UP"

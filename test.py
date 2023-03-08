@@ -1,9 +1,21 @@
 from utils import nft_inspect_tools as nft
 import pandas as pd
 import os
+import requests
+import yaml
+
+with open("utils/yamls/config.yml", "r") as f:
+    config = yaml.load(f, Loader=yaml.FullLoader)
+
+
+def get_db_data():
+    response = requests.get(config["DATABASE_API"])
+    data = response.json()
+    return data
 
 
 def test_function():
+    pfp_table_data = get_db_data()
     test_members = nft.get_simple_members("y00ts")
     '''
     Test with nft inspect api for git action because it
@@ -30,7 +42,10 @@ def test_function():
                 "Time With Collection": [member_time_with_collection],
             }
         )
-        print("Member Data Frame: ", member_data_frame)
+        # print("Member Data Frame: ", member_data_frame)
+
+    for item in pfp_table_data:
+        print("PFP Table Item: ", item)
 
 
 if 'GITHUB_ACTION' in os.environ:
