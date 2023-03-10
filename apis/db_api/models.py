@@ -1,4 +1,5 @@
 from django.db import models
+import yaml
 
 '''
 Models are the single, definitive source of information about your data.
@@ -13,6 +14,9 @@ TODO:
     - Change model names from Tweet to PFP_Table and propagate changes
 '''
 
+with open("../utils/yamls/config.yml", "r") as f:
+    config = yaml.load(f, Loader=yaml.FullLoader)
+
 
 class Tweet(models.Model):
     index = models.CharField(
@@ -25,8 +29,8 @@ class Tweet(models.Model):
 
     class Meta:
         # managed = False
-        db_table = 'pfp_table'
-        verbose_name_plural = 'pfp_table'
+        db_table = config["pfp_table_name"]
+        verbose_name_plural = config["pfp_table_name"]
 
     def __str__(self):
         print(f"{self.Name} has {self.Favorites} favorites, {self.Retweets} retweets, {self.Replies} replies, and {self.Impressions} impressions")

@@ -7,7 +7,7 @@ from .serializers import *
 
 
 class TweetList(generics.ListCreateAPIView):
-    queryset = Tweet.objects.all().order_by('index')
+    queryset = Tweet.objects.all().order_by('-Impressions')
     serializer_class = TweetSerializer
 
 

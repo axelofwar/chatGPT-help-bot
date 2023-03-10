@@ -7,5 +7,5 @@ prompt: What has Axelofwar been up to lately?
 max_tokens: 150
 temp: 0.9
 host: localhost
-database_api: ":8000/api/Tweet/"
+database_api: ":8000/api/Tweet/" #change to your own here
 openai_endpoint: https://api.openai.com/v1
